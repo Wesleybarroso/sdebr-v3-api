@@ -28,14 +28,18 @@ import {
   desbloquearIP,
   listarSolicitacoes,
   aprovarPonto,
-  rejeitarPonto
+  rejeitarPonto,
+  getDashboard,
+  listarAuditoria,
+  listarLogs,
+  listarUsuarios
 } from '../controllers/adminController.js';
 
 import {
   register,
   login,
-  getMe,           // ← ADICIONADO
-  alterarSenha     // ← ADICIONADO (se já tiver)
+  getMe,
+  alterarSenha
 } from '../controllers/authController.js';
 
 // ======================
@@ -61,8 +65,8 @@ router.get('/', (req, res) => {
 // ======================
 router.post('/register', register);
 router.post('/login', login);
-router.get('/me', authMiddleware, getMe);                    // ← ROTA ADICIONADA
-router.put('/alterar-senha', authMiddleware, alterarSenha);  // ← ROTA ADICIONADA
+router.get('/me', authMiddleware, getMe);
+router.put('/alterar-senha', authMiddleware, alterarSenha);
 
 // ======================
 // 📍 PONTOS
@@ -84,26 +88,20 @@ router.delete('/necessidades/:id', authMiddleware, permit('ponto', 'admin'), del
 // 🤝 DOAÇÕES
 // ======================
 router.get('/doacoes', listarDoacoes);
-
-router.post(
-  '/doacoes',
-  authMiddleware,
-  permit('user', 'admin'),
-  doacaoLimiter,
-  registrarDoacao
-);
-
+router.post('/doacoes', authMiddleware, permit('user', 'admin'), doacaoLimiter, registrarDoacao);
 router.delete('/doacoes/:id', authMiddleware, permit('admin'), deletarDoacao);
 
 // ======================
 // 👑 ADMIN
 // ======================
+router.get('/admin/dashboard', authMiddleware, permit('admin'), getDashboard);
 router.get('/admin/ips', authMiddleware, permit('admin'), listarIPsBloqueados);
 router.delete('/admin/ip/:ip', authMiddleware, permit('admin'), desbloquearIP);
-
 router.get('/admin/solicitacoes', authMiddleware, permit('admin'), listarSolicitacoes);
-
 router.patch('/admin/aprovar/:id', authMiddleware, permit('admin'), aprovarPonto);
 router.patch('/admin/rejeitar/:id', authMiddleware, permit('admin'), rejeitarPonto);
+router.get('/admin/auditoria', authMiddleware, permit('admin'), listarAuditoria);
+router.get('/admin/logs', authMiddleware, permit('admin'), listarLogs);
+router.get('/admin/usuarios', authMiddleware, permit('admin'), listarUsuarios);
 
 export default router;

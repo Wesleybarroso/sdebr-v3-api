@@ -298,3 +298,58 @@ export async function listarAuditoria(req, res) {
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
+
+// ======================
+// 📋 LISTAR LOGS (SISTEMA)
+// ======================
+export async function listarLogs(req, res) {
+  try {
+    const db = await connectDB();
+    const logs = await db.all(`
+      SELECT * FROM logs 
+      ORDER BY created_at DESC 
+      LIMIT 100
+    `);
+    res.json(logs);
+  } catch (err) {
+    logger.error('Erro ao listar logs:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+}
+
+// ======================
+// 👥 LISTAR USUÁRIOS
+// ======================
+export async function listarUsuarios(req, res) {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, parseInt(req.query.limit) || 20);
+    const offset = (page - 1) * limit;
+
+    const db = await connectDB();
+
+    const [usuarios, total] = await Promise.all([
+      db.all(
+        `SELECT id, nome, email, role, status, created_at, ultimo_login
+         FROM usuarios
+         ORDER BY created_at DESC
+         LIMIT ? OFFSET ?`,
+        [limit, offset]
+      ),
+      db.get('SELECT COUNT(*) as total FROM usuarios')
+    ]);
+
+    res.json({
+      data: usuarios,
+      paginacao: {
+        total: total.total,
+        page,
+        limit,
+        paginas: Math.ceil(total.total / limit)
+      }
+    });
+  } catch (err) {
+    logger.error('Erro ao listar usuários:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+}

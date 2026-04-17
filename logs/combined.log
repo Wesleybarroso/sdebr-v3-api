@@ -246,3 +246,19 @@
 {"level":"debug","message":"Iniciando limpeza programada...","timestamp":"16/04/2026, 22:36:14"}
 {"level":"debug","message":"Limpeza de IPs: nenhum registro expirado encontrado","timestamp":"16/04/2026, 22:36:14"}
 {"level":"debug","message":"Limpeza programada concluída","timestamp":"16/04/2026, 22:36:14"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"16/04/2026, 23:33:44"}
+{"level":"info","message":"Conexão com banco de dados estabelecida","timestamp":"16/04/2026, 23:33:44"}
+{"level":"info","message":"Schema do banco inicializado com sucesso","timestamp":"16/04/2026, 23:33:44"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"16/04/2026, 23:33:44"}
+{"level":"info","message":"✅ Admin já existe: admin@sdebr.com","timestamp":"16/04/2026, 23:33:44"}
+{"level":"debug","message":"Iniciando limpeza programada...","timestamp":"16/04/2026, 23:33:44"}
+{"level":"debug","message":"Limpeza de IPs: nenhum registro expirado encontrado","timestamp":"16/04/2026, 23:33:44"}
+{"level":"debug","message":"Limpeza programada concluída","timestamp":"16/04/2026, 23:33:44"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"17/04/2026, 00:30:31"}
+{"level":"info","message":"Conexão com banco de dados estabelecida","timestamp":"17/04/2026, 00:30:31"}
+{"level":"info","message":"Schema do banco inicializado com sucesso","timestamp":"17/04/2026, 00:30:31"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"17/04/2026, 00:30:31"}
+{"level":"info","message":"✅ Admin já existe: admin@sdebr.com","timestamp":"17/04/2026, 00:30:31"}
+{"level":"debug","message":"Iniciando limpeza programada...","timestamp":"17/04/2026, 00:30:31"}
+{"level":"debug","message":"Limpeza de IPs: nenhum registro expirado encontrado","timestamp":"17/04/2026, 00:30:31"}
+{"level":"debug","message":"Limpeza programada concluída","timestamp":"17/04/2026, 00:30:31"}
