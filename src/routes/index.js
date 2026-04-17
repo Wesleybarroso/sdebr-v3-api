@@ -33,7 +33,9 @@ import {
 
 import {
   register,
-  login
+  login,
+  getMe,           // ← ADICIONADO
+  alterarSenha     // ← ADICIONADO (se já tiver)
 } from '../controllers/authController.js';
 
 // ======================
@@ -59,6 +61,8 @@ router.get('/', (req, res) => {
 // ======================
 router.post('/register', register);
 router.post('/login', login);
+router.get('/me', authMiddleware, getMe);                    // ← ROTA ADICIONADA
+router.put('/alterar-senha', authMiddleware, alterarSenha);  // ← ROTA ADICIONADA
 
 // ======================
 // 📍 PONTOS
