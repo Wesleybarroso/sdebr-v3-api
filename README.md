@@ -254,55 +254,61 @@ SDEBR-V2-API/
 
 
 
-Base URL
-text
-http://localhost:3000/api/v1
-🏠 Health Check
-Método	Endpoint	Descrição
-GET	/	Status da API (público)
-👤 Autenticação
-Método	Endpoint	Descrição	Rate Limit
-POST	/register	Registrar doador/ponto	5/hora
-POST	/login	Login	10/15min
-GET	/me	Meu perfil (auth)	-
-PUT	/alterar-senha	Alterar senha (auth)	-
-📍 Pontos de Coleta
-Método	Endpoint	Descrição	Permissão
-GET	/pontos	Listar pontos (público)	-
-GET	/pontos/:id	Buscar ponto + necessidades	-
-GET	/pontos/meus	Meus pontos	auth
-POST	/pontos	Criar ponto	admin
-PUT	/pontos/:id	Atualizar ponto	admin
-DELETE	/pontos/:id	Deletar ponto	admin
-Filtros para listagem:
+## 🔗 Endpoints
 
-Parâmetro	Exemplo	Descrição
-cidade	?cidade=São Paulo	Filtro por cidade
-estado	?estado=SP	Filtro por UF
-busca	?busca=centro	Busca em nome/bairro
-page	?page=2	Página (padrão: 1)
-limit	?limit=20	Itens por página (max: 100)
-📦 Necessidades
-Método	Endpoint	Descrição	Permissão
-GET	/necessidades	Listar necessidades (público)	-
-GET	/necessidades/:id	Buscar necessidade	-
-POST	/necessidades	Criar necessidade	ponto/admin
-PATCH	/necessidades/:id	Atualizar necessidade	ponto/admin
-DELETE	/necessidades/:id	Deletar necessidade	ponto/admin
-🤝 Doações
-Método	Endpoint	Descrição	Permissão	Rate Limit
-GET	/doacoes	Listar doações (público)	-	-
-POST	/doacoes	Registrar doação	user/admin	5/minuto
-DELETE	/doacoes/:id	Deletar doação	admin	-
-👑 Administração (Painel Brasileiro)
-Método	Endpoint	Descrição	Permissão
-GET	/admin/dashboard	Métricas do sistema	admin
-GET	/admin/ips	IPs bloqueados	admin
-DELETE	/admin/ip/:ip	Desbloquear IP	admin
-GET	/admin/solicitacoes	Solicitações pendentes	admin
-PATCH	/admin/aprovar/:id	Aprovar ponto de coleta	admin
-PATCH	/admin/rejeitar/:id	Rejeitar solicitação	admin
-GET	/admin/auditoria	Log de auditoria	admin
+### Base URL
+https://sdebr-v2-api.onrender.com/api/v1
+
+### 🏠 Health Check
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/` | Status da API |
+
+### 👤 Autenticação
+| Método | Endpoint | Descrição | Rate Limit |
+|--------|----------|-----------|------------|
+| POST | `/register` | Registrar usuário | 5/hora |
+| POST | `/login` | Login | 10/15min |
+| GET | `/me` | Meu perfil | - |
+| PUT | `/alterar-senha` | Alterar senha | - |
+
+### 📍 Pontos de Coleta
+| Método | Endpoint | Descrição | Permissão |
+|--------|----------|-----------|-----------|
+| GET | `/pontos` | Listar pontos | Público |
+| GET | `/pontos/:id` | Buscar ponto | Público |
+| GET | `/pontos/meus` | Meus pontos | auth |
+| POST | `/pontos` | Criar ponto | admin, ponto |
+| PUT | `/pontos/:id` | Atualizar ponto | admin, ponto |
+| DELETE | `/pontos/:id` | Deletar ponto | admin, ponto |
+
+### 📦 Necessidades
+| Método | Endpoint | Descrição | Permissão |
+|--------|----------|-----------|-----------|
+| GET | `/necessidades` | Listar necessidades | Público |
+| GET | `/necessidades/:id` | Buscar necessidade | Público |
+| POST | `/necessidades` | Criar necessidade | ponto, admin |
+| PATCH | `/necessidades/:id` | Atualizar necessidade | ponto, admin |
+| DELETE | `/necessidades/:id` | Deletar necessidade | ponto, admin |
+
+### 🤝 Doações
+| Método | Endpoint | Descrição | Permissão | Rate Limit |
+|--------|----------|-----------|-----------|------------|
+| GET | `/doacoes` | Listar doações | Público | - |
+| POST | `/doacoes` | Registrar doação | user, admin | 5/minuto |
+| DELETE | `/doacoes/:id` | Deletar doação | admin | - |
+
+### 👑 Administração
+| Método | Endpoint | Descrição | Permissão |
+|--------|----------|-----------|-----------|
+| GET | `/admin/dashboard` | Métricas | admin |
+| GET | `/admin/ips` | IPs bloqueados | admin |
+| DELETE | `/admin/ip/:ip` | Desbloquear IP | admin |
+| GET | `/admin/solicitacoes` | Solicitações pendentes | admin |
+| PATCH | `/admin/aprovar/:id` | Aprovar ponto | admin |
+| PATCH | `/admin/rejeitar/:id` | Rejeitar solicitação | admin |
+| GET | `/admin/auditoria` | Log de auditoria | admin |
+
 🔒 Segurança
 Rate Limits (Proteção Brasileira)
 Endpoint	Limite	Janela	Motivo
