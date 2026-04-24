@@ -11,6 +11,16 @@ export const registerSchema = z.object({
     .toLowerCase()
     .trim(),
 
+  telefone: z.string()
+    .min(8, 'Telefone inválido')
+    .max(20, 'Telefone muito longo')
+    .trim(),
+
+  endereco: z.string()
+    .min(5, 'Endereço muito curto')
+    .max(255, 'Endereço muito longo')
+    .trim(),
+
   senha: z.string()
     .min(8, 'Senha deve ter no mínimo 8 caracteres')
     .max(128, 'Senha muito longa')
