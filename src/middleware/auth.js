@@ -1,6 +1,7 @@
+// src/middleware/auth.js
 import jwt from 'jsonwebtoken';
 import { JWT_CONFIG } from '../config/jwt.js';
-import { connectDB } from '../database/db.js';
+import pool from '../database/db.js';
 import { logger } from '../config/logger.js';
 
 // ======================
@@ -37,12 +38,13 @@ export async function authMiddleware(req, res, next) {
       return res.status(401).json({ error: 'Token malformado' });
     }
 
-    // valida usuário no banco (garante que não foi banido/deletado após emissão)
-    const db = await connectDB();
-    const user = await db.get(
-      'SELECT id, nome, email, role, status, telefone, endereco FROM usuarios WHERE id = ?',
+    // ✅ PostgreSQL: valida usuário com pool.query()
+    const userResult = await pool.query(
+      'SELECT id, nome, email, role, status, telefone, endereco FROM usuarios WHERE id = $1',
       [decoded.id]
     );
+
+    const user = userResult.rows[0];  // ✅ Acessa .rows[0] no PostgreSQL
 
     if (!user) {
       return res.status(401).json({ error: 'Usuário não encontrado' });
@@ -56,7 +58,7 @@ export async function authMiddleware(req, res, next) {
     next();
 
   } catch (err) {
-    logger.error('Erro no authMiddleware:', err);
+    logger.error('Erro no authMiddleware:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
@@ -76,11 +78,13 @@ export async function authOpcional(req, res, next) {
     });
 
     if (decoded?.id) {
-      const db = await connectDB();
-      const user = await db.get(
-        'SELECT id, nome, email, role, status, telefone, endereco FROM usuarios WHERE id = ? AND status = ?',
+      // ✅ PostgreSQL: busca usuário com pool.query()
+      const userResult = await pool.query(
+        'SELECT id, nome, email, role, status, telefone, endereco FROM usuarios WHERE id = $1 AND status = $2',
         [decoded.id, 'ativo']
       );
+      
+      const user = userResult.rows[0];  // ✅ Acessa .rows[0]
       if (user) req.user = user;
     }
   } catch {

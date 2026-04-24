@@ -1,100 +1,98 @@
-import { connectDB } from '../database/db.js';
+// src/middleware/ipBlocker.js
+import pool from '../database/db.js';
 import { logger } from '../config/logger.js';
 
-const BLOCK_TIME = parseInt(process.env.IP_BLOCK_TIME_MS) || 10 * 60 * 1000; // 10 min padrão
-
-// cache local para reduzir queries ao banco
-const cache = new Map();
-const CACHE_TTL = 60_000; // 1 minuto
-
-function normalizeIP(ip) {
-  return ip?.replace('::ffff:', '') || 'unknown';
-}
-
-// ======================
-// 🚫 BLOQUEAR IP (persiste no banco)
-// ======================
-export async function blockIP(ip, motivo = 'automático') {
-  ip = normalizeIP(ip);
-
-  try {
-    const db = await connectDB();
-    const expiresAt = new Date(Date.now() + BLOCK_TIME).toISOString();
-
-    // upsert — se já existe, renova expiração e incrementa contador
-    await db.run(
-      `INSERT INTO ips_bloqueados (ip, motivo, bloqueios, expires_at)
-       VALUES (?, ?, 1, ?)
-       ON CONFLICT(ip) DO UPDATE SET
-         expires_at = excluded.expires_at,
-         motivo = excluded.motivo,
-         bloqueios = bloqueios + 1`,
-      [ip, motivo, expiresAt]
-    );
-
-    // invalida cache para forçar re-consulta
-    cache.delete(ip);
-
-    logger.warn(`IP bloqueado: ${ip} | motivo: ${motivo} | expira: ${expiresAt}`);
-  } catch (err) {
-    logger.error('Erro ao bloquear IP:', err);
-  }
-}
-
-// ======================
-// 🔓 DESBLOQUEAR IP
-// ======================
-export async function unblockIP(ip) {
-  ip = normalizeIP(ip);
-  try {
-    const db = await connectDB();
-    await db.run('DELETE FROM ips_bloqueados WHERE ip = ?', [ip]);
-    cache.delete(ip);
-    logger.info(`IP desbloqueado manualmente: ${ip}`);
-  } catch (err) {
-    logger.error('Erro ao desbloquear IP:', err);
-  }
-}
-
-// ======================
-// 🛡️ MIDDLEWARE DE BLOQUEIO
-// ======================
+/**
+ * Middleware para bloquear IPs com muitas requisições falhas
+ */
 export async function ipBlocker(req, res, next) {
+  const ip = req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress;
+  
   try {
-    const ip = normalizeIP(req.ip);
-    const now = Date.now();
-
-    // checa cache primeiro (evita query a cada request)
-    const cached = cache.get(ip);
-    if (cached && now < cached.until) {
-      if (cached.bloqueado) {
-        return res.status(403).json({
-          error: 'Seu acesso foi bloqueado temporariamente. Tente novamente mais tarde.'
-        });
-      }
-      return next();
-    }
-
-    // consulta banco
-    const db = await connectDB();
-    const registro = await db.get(
-      `SELECT ip, expires_at FROM ips_bloqueados
-       WHERE ip = ? AND expires_at > datetime('now')`,
+    // ✅ Usa pool.query() direto (API correta do pg para PostgreSQL)
+    const result = await pool.query(
+      `SELECT id, motivo, expires_at 
+       FROM ips_bloqueados 
+       WHERE ip = $1 AND expires_at > NOW()
+       ORDER BY blocked_at DESC 
+       LIMIT 1`,
       [ip]
     );
-
-    // atualiza cache
-    cache.set(ip, { bloqueado: !!registro, until: now + CACHE_TTL });
-
-    if (registro) {
+    
+    if (result.rows.length > 0) {
+      const bloqueio = result.rows[0];
+      logger.warn(`🚫 IP bloqueado: ${ip} - ${bloqueio.motivo}`);
+      
       return res.status(403).json({
-        error: 'Seu acesso foi bloqueado temporariamente. Tente novamente mais tarde.'
+        error: 'Acesso bloqueado',
+        motivo: bloqueio.motivo,
+        expires_at: bloqueio.expires_at
       });
     }
-
+    
+    // IP liberado, continua a requisição
     next();
-  } catch (err) {
-    logger.error('Erro no ipBlocker:', err);
-    next(); // em caso de erro, não bloqueia o request
+    
+  } catch (error) {
+    // Fail-open: em caso de erro no banco, não bloqueie o usuário
+    logger.error('❌ Erro ao verificar IP blocker:', error.message);
+    next();
   }
 }
+
+/**
+ * ✅ Registra um IP como bloqueado (exportado como 'blockIP' para compatibilidade)
+ * @param {string} ip - Endereço IP
+ * @param {string} motivo - Motivo do bloqueio
+ * @param {number} minutos - Tempo de bloqueio em minutos
+ */
+export async function blockIP(ip, motivo, minutos = 30) {
+  try {
+    await pool.query(
+      `INSERT INTO ips_bloqueados (ip, motivo, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '${minutos} minutes')
+       ON CONFLICT (ip) 
+       DO UPDATE SET 
+         motivo = EXCLUDED.motivo,
+         expires_at = EXCLUDED.expires_at,
+         bloqueios = ips_bloqueados.bloqueios + 1`,
+      [ip, motivo]
+    );
+    
+    logger.info(`🔒 IP bloqueado: ${ip} por ${minutos}min - ${motivo}`);
+    
+  } catch (error) {
+    logger.error('❌ Erro ao bloquear IP:', error.message);
+  }
+}
+
+/**
+ * ✅ Desbloqueia um IP manualmente (exportado como 'unblockIP' para compatibilidade)
+ * @param {string} ip - Endereço IP a ser desbloqueado
+ * @returns {Promise<boolean>} true se desbloqueou, false se não encontrou
+ */
+export async function unblockIP(ip) {
+  try {
+    const result = await pool.query(
+      'DELETE FROM ips_bloqueados WHERE ip = $1',
+      [ip]
+    );
+    
+    if (result.rowCount > 0) {
+      logger.info(`🔓 IP desbloqueado: ${ip}`);
+      return true;
+    }
+    logger.debug(`ℹ️ IP não estava bloqueado: ${ip}`);
+    return false;
+    
+  } catch (error) {
+    logger.error('❌ Erro ao desbloquear IP:', error.message);
+    return false;
+  }
+}
+
+// ============================================
+// 🔄 Aliases em português (opcional, para uso interno)
+// ============================================
+export const bloquearIP = blockIP;        // Alias PT-BR para blockIP
+export const desbloquearIP = unblockIP;   // Alias PT-BR para unblockIP

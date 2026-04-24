@@ -2,6 +2,12 @@ import 'dotenv/config';
 import app from './src/app.js';
 import { logger } from './src/config/logger.js';
 
+console.log('--- TESTE DE AMBIENTE ---');
+console.log('DATABASE_URL:', process.env.DATABASE_URL);
+console.log('JWT_SECRET:', process.env.JWT_SECRET);
+console.log('JWT_REFRESH_SECRET:', process.env.JWT_REFRESH_SECRET);
+console.log('-------------------------');
+
 const PORT = process.env.PORT || 3000;
 
 const server = app.listen(PORT, () => {

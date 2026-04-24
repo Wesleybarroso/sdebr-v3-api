@@ -1,53 +1,55 @@
-import { connectDB } from '../database/db.js';
-import bcrypt from 'bcrypt';
+import pool from '../database/db.js';
 import { logger } from '../config/logger.js';
+import bcrypt from 'bcrypt';
 
 /**
- * Cria um administrador padrão se não existir nenhum no sistema
- * Executado automaticamente na inicialização do servidor
+ * Cria usuário admin padrão se não existir
  */
 export async function seedAdmin() {
+  let client; // ✅ Declare fora do try para usar no finally
+  
   try {
-    const db = await connectDB();
+    client = await pool.connect(); // ✅ Conecta ao pool
     
-    // Verifica se já existe algum administrador
-    const adminExistente = await db.get(
-      'SELECT id, email FROM usuarios WHERE role = "admin" LIMIT 1'
+    // Verifica se admin já existe (usa parâmetro para evitar SQL injection)
+    const exists = await client.query(
+      'SELECT id FROM usuarios WHERE email = $1',
+      ['admin@sdebr.com']
     );
     
-    if (adminExistente) {
-      logger.info(`✅ Admin já existe: ${adminExistente.email}`);
+    if (exists.rows.length > 0) {
+      logger.info('👤 Admin já existe, pulando seed');
       return;
     }
     
-    // Dados do admin padrão (use variáveis de ambiente para segurança)
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@sdebr.com';
-    const adminSenha = process.env.ADMIN_SENHA || 'Admin123';
-    const adminNome = process.env.ADMIN_NOME || 'Administrador SDEBR';
-    
     // Hash da senha
-    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
-    const senhaHash = await bcrypt.hash(adminSenha, saltRounds);
+    const senhaHash = await bcrypt.hash('admin123', 10);
     
-    // Criar administrador
-    await db.run(
-      `INSERT INTO usuarios (nome, email, senha, role, status, created_at)
-       VALUES (?, ?, ?, 'admin', 'ativo', CURRENT_TIMESTAMP)`,
-      [adminNome, adminEmail, senhaHash]
+    // Insert com parâmetros ($1, $2, etc.) — NUNCA concatene strings!
+    await client.query(
+      `INSERT INTO usuarios (
+        nome, email, senha, role, status, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())`,
+      [
+        'Administrador',
+        'admin@sdebr.com',
+        senhaHash,
+        'admin',        // ✅ Valor texto, não nome de coluna
+        'ativo'
+      ]
     );
     
-    logger.warn(`
-╔══════════════════════════════════════════════════════════════╗
-║                    🔐 ADMIN CRIADO AUTOMATICAMENTE           ║
-╠══════════════════════════════════════════════════════════════╣
-║  Email: ${adminEmail.padEnd(44)}║
-║  Senha: ${adminSenha.padEnd(44)}║
-╠══════════════════════════════════════════════════════════════╣
-║  ⚠️  ALTERE A SENHA APÓS O PRIMEIRO LOGIN!                   ║
-╚══════════════════════════════════════════════════════════════╝
-    `);
+    logger.info('👤 Admin padrão criado: admin@sdebr.com / admin123');
     
-  } catch (err) {
-    logger.error('Erro ao criar admin inicial:', err);
+  } catch (error) {
+    logger.error('❌ Erro ao criar admin inicial:', error.message);
+    // Não lança o erro para não travar o servidor em dev
+    // Se quiser travar: throw error;
+    
+  } finally {
+    // ✅ Libera a conexão apenas se ela foi criada
+    if (client) {
+      client.release();
+    }
   }
 }

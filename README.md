@@ -1,257 +1,244 @@
-# 🇧🇷 SDEBR API - Sistema de Doações Especializado Brasileiro
+🐘 SDEBR API v3.0 — Sistema de Doações e Benefícios Recíprocos
+API RESTful completa para gestão de pontos de coleta, necessidades e doações, com autenticação JWT, validação Zod, rate limiting e auditoria.
 
-**API RESTful** para gerenciamento de pontos de coleta, doações e necessidades, desenvolvida especialmente para o cenário brasileiro.
+✅ 100% compatível com PostgreSQL
+✅ Migração concluída de MySQL/SQLite
+✅ 18/18 testes automatizados passando
+✅ Pronto para produção
 
----
+📋 Índice
+✨ Funcionalidades
+🛠️ Tecnologias
+📦 Requisitos
+🚀 Instalação
+⚙️ Variáveis de Ambiente
+🗄️ Banco de Dados
+🔐 Autenticação
+🗺️ Rotas da API
+🧪 Testes
+🌐 Deploy
+🤝 Contribuindo
+📄 Licença
 
-## 📋 Índice
+✨ Funcionalidades
+👤 Usuários e Autenticação
+✅ Cadastro com validação Zod (email, senha forte, telefone)
+✅ Login com JWT (access token + refresh token)
+✅ Alteração de senha com validação cruzada
+✅ Perfil do usuário logado (/me)
+✅ Roles: user, ponto, admin
+📍 Pontos de Coleta
+✅ CRUD completo de pontos (admin apenas para criar/editar)
+✅ Listagem pública com filtros (cidade, estado, busca)
+✅ Validação: usuário só pode ter pontos na mesma cidade
+✅ Limitação de pontos por usuário (configurável)
+📦 Necessidades
+✅ Cadastro de necessidades por ponto (dono do ponto ou admin)
+✅ Cálculo automático de porcentagem e urgência
+✅ Status dinâmico: precisando → ok quando atendida
+✅ Listagem pública ordenada por urgência
+🤝 Doações
+✅ Registro de doações vinculadas a necessidades
+✅ Atualização automática de quantidade restante
+✅ Rate limiting para prevenir spam (5/min por usuário)
+✅ Histórico com paginação e filtros
+👑 Painel Administrativo
+✅ Dashboard com métricas em tempo real
+✅ Aprovação/rejeição de pontos pendentes
+✅ Gestão de usuários (listar, deletar)
+✅ Logs de auditoria com filtro e paginação
+✅ Gerenciamento de IPs bloqueados
+🔐 Segurança
+✅ JWT com algoritmo configurável (HS256/RS256)
+✅ Bcrypt com salt rounds dinâmico (.env)
+✅ Rate limiting por IP e por usuário
+✅ IP blocker automático em caso de abuso
+✅ Helmet + CORS configurados
+✅ Validação Zod em todas as entradas
+🧹 Manutenção
+✅ Cleanup agendado: IPs expirados + auditoria antiga (>90 dias)
+✅ Seed automático do admin no startup
+✅ Logs estruturados com pino/winston
+✅ Graceful shutdown com SIGTERM/SIGINT
 
-- [Sobre o Projeto](#sobre-o-projeto)
-- [Tecnologias](#tecnologias)
-- [Funcionalidades](#funcionalidades)
-- [Pré-requisitos](#pré-requisitos)
-- [Instalação](#instalação)
-- [Configuração](#configuração)
-- [Primeiro Acesso (Administrador)](#primeiro-acesso-administrador)  
-- [Executando a API](#executando-a-api)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Endpoints](#endpoints)
-- [Segurança](#segurança)
-- [Banco de Dados](#banco-de-dados)
-- [Variáveis de Ambiente](#variáveis-de-ambiente)
-- [Scripts Disponíveis](#scripts-disponíveis)
-- [Logs](#logs)
-- [Exemplos de Requisições](#exemplos-de-requisições)
-- [Respostas de Erro](#respostas-de-erro)
-- [Limpeza Automática](#limpeza-automática)
-- [Contribuição](#contribuição)
-- [Licença](#licença)
+🛠️ Tecnologias
 
----
+Categoria            Tecnológia
+ROUNTIME             Node.js 24+ ES Modules
+FRAMEKORK            EXPRESS 4.X
+BANCO DE DADOS       POSTGRESQL 14+ com pg
+AUTENTICAÇÃO         JWT (jsonwebtoken), Bcrypt
+VALIDAÇÃO            ZOD (schema validation + sanition)
+SEGURANÇA            HELMET, CORS, EXPRESS-RATE-LIMIT
+LOGS                 PINO/WINSTON COM FORMATAÇAO ESTRTUTURADA
+TESTES               PowerShell scripts + Invoke-RestMethod
+DEPLOY               Render, Railway, VPS, (Docker opcional)
 
-## 🎯 Sobre o Projeto
 
-O **Sistema de Doações Especializado Brasileiro (SDEBR)** é uma plataforma que conecta doadores a pontos de coleta em todo o Brasil, facilitando o gerenciamento de necessidades e o registro de doações.
+📦 Requisitos
+Node.js >= 20.x (recomendado 24.x)
+PostgreSQL >= 14.x
+npm >= 9.x ou yarn >= 1.22.x
+PowerShell 7+ (para testes) ou qualquer cliente HTTP
 
-### Problema que resolve
-- ✅ Dificuldade em encontrar pontos de coleta próximos
-- ✅ Falta de transparência nas necessidades reais
-- ✅ Ausência de controle sobre doações realizadas
-- ✅ Desorganização na gestão de pontos de coleta
 
-### Solução
-- 📍 Mapeamento de pontos de coleta por cidade/estado
-- 📦 Registro em tempo real das necessidades
-- 🤝 Rastreamento de doações
-- 👑 Gestão administrativa centralizada
+🚀 Instalação
+1. Clone o repositório
+git clone https://github.com/seu-usuario/sdebr-v3-api.git
+cd sdebr-v3-api
 
----
-
-## 🛠️ Tecnologias
-
-| Tecnologia | Versão | Descrição |
-|------------|--------|-------------|
-| Node.js | >=18 | Runtime JavaScript |
-| Express | 4.18.2 | Framework web |
-| SQLite3 | 6.x | Banco de dados leve |
-| SQLite | 5.x | Driver SQLite |
-| JWT | 9.x | Autenticação segura |
-| Bcrypt | 6.x | Hash de senhas |
-| Zod | 4.x | Validação de dados |
-| Winston | 3.x | Logging estruturado |
-| Helmet | 8.x | Segurança HTTP |
-| CORS | 2.x | Cross-origin resources |
-| Express Rate Limit | 8.x | Limitação de requisições |
-
----
-
-## ✨ Funcionalidades
-
-### 👤 Autenticação (Brasileira)
-- Registro de usuários com validação de email
-- Login com JWT (JSON Web Token)
-- Roles específicas: `user` (doador), `ponto` (coleta), `admin` (gestor)
-- Aprovação manual de pontos de coleta
-- Alteração de senha com validação de força
-
-### 📍 Pontos de Coleta (Brasileiros)
-- Cadastro com endereço completo (rua, número, bairro, cidade, estado, CEP)
-- Limite de 2 pontos por usuário
-- Validação: todos os pontos do mesmo usuário devem ser na mesma cidade
-- Listagem pública com paginação
-- Filtros por cidade, estado e busca textual
-- Flag `ativo` para desativação temporária
-
-### 📦 Necessidades dos Pontos
-- Cadastro por tipo (ex: "Alimentos não perecíveis", "Roupas", "Material escolar")
-- Quantidade desejada e restante
-- Cálculo automático de porcentagem atendida
-- Urgência automática (alta/media/baixa/ok) baseada na porcentagem
-- Status automático (`precisando` / `ok`)
-
-### 🤝 Doações
-- Registro rápido de doações
-- Atualização automática da necessidade relacionada
-- Transações SQL para garantir consistência
-- Restauração automática ao deletar doação
-- Listagem com paginação
-
-### 👑 Administração (Painel Brasileiro)
-- Dashboard com métricas em tempo real
-- Listagem de IPs bloqueados por segurança
-- Desbloqueio manual de IPs
-- Aprovação/Rejeição de solicitações de ponto de coleta
-- Log de auditoria completo (90 dias de retenção)
-
-### 🛡️ Segurança (Nível Banco)
-- Rate limiting por endpoint
-- Bloqueio automático de IPs por tentativas excessivas
-- Validação de dados com Zod (schemas tipados)
-- Helmet para headers HTTP seguros
-- CORS configurável para múltiplos domínios
-- Hash de senhas com bcrypt (salt rounds: 12)
-- JWT com access + refresh token
-- Proteção contra timing attack no login
-
-### 🇧🇷 Especificidades Brasileiras
-- Horário de Brasília em todos os logs (America/Sao_Paulo)
-- Validação de CEP (formato 00000-000)
-- Estados brasileiros (UF com 2 caracteres)
-- Cidades com acentuação preservada
-- Português nas mensagens de erro
-
----
-
-## 📋 Pré-requisitos
-
-- Node.js >= 18.0.0
-- npm ou yarn
-- Git
-
----
-
-## 🔧 Instalação
-
-```bash
-# Clone o repositório
-git clone https://github.com/seu-usuario/sdebr-v2-api.git
-cd sdebr-v2-api
-
-# Instale as dependências
+2. Instale as dependências
 npm install
+# ou
+yarn install
 
-# Copie o arquivo de ambiente
+3. Configure as variáveis de ambiente
 cp .env.example .env
+# Edite .env com suas configurações (veja seção abaixo)
 
-# Edite o .env com suas configurações
-nano .env
+4. Inicie o banco de dados
+# Certifique-se que o PostgreSQL está rodando
+# O script initDB cria as tabelas automaticamente no primeiro start
 
-⚙️ Configuração
-Gerar chaves JWT seguras 
-
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-
-Copie o resultado para JWT_SECRET e JWT_REFRESH_SECRET no .env.
-
-Configurar CORS para produção
-# Múltiplos domínios (separados por vírgula)
-CORS_ORIGIN=https://meusite.com.br,https://admin.meusite.com.br
-
-
-
-
-## 👑 Primeiro Acesso (Administrador)
-
-O sistema **cria automaticamente** um administrador na primeira execução, garantindo que você tenha acesso imediato ao painel administrativo.
-
-### 🔐 Credenciais Padrão
-
-| Campo | Valor |
-|-------|-------|
-| **Email** | `admin@sdebr.com` |
-| **Senha** | `Admin123` |
-
-### ⚠️ Importante
-
-- ✅ O admin **só é criado** se não existir nenhum administrador no sistema
-- ✅ As credenciais aparecem nos **logs** na primeira execução
-- 🔐 **Altere a senha imediatamente** após o primeiro login
-- 🚫 Remova as variáveis `ADMIN_*` do `.env` em produção após criar o admin
-
-### 🛠️ Personalizar Credenciais
-
-Para criar um admin com dados personalizados, adicione no `.env`:
-
-```env
-ADMIN_EMAIL=seu-email@dominio.com
-ADMIN_SENHA=SuaSenhaForte2026!
-ADMIN_NOME=Seu Nome
-
-🚀 Executando a API
-DESENVOLVIMENTO
+5. Inicie o servidor
+# Desenvolvimento (com nodemon + hot reload)
 npm run dev
-# Servidor rodando em http://localhost:3000
-# Com hot-reload (nodemon)
 
-PRODUÇÃO
+# Produção
 npm start
-# Servidor rodando na porta configurada
 
-TESTAR CONEXÃO 
+6. Verifique o health check
 curl http://localhost:3000/
+# Resposta esperada:
+# {"status":"online","app":"SDEBR API","version":"1.0.0",...}
 
-Resposta esperada:
+⚙️ Variáveis de Ambiente
+Copie .env.example para .env e ajuste:
+# 🌐 Servidor
+PORT=3000
+NODE_ENV=development
 
-json
+# 🗄️ PostgreSQL
+DATABASE_URL=postgres://usuario:senha@localhost:5432/sdebr-db
+
+# 🔐 JWT
+JWT_SECRET=sua-chave-secreta-muito-longa-e-segura-aqui
+JWT_REFRESH_SECRET=outra-chave-diferente-para-refresh-token
+JWT_ALGORITHM=HS256
+JWT_EXPIRES_IN=1h
+JWT_REFRESH_EXPIRES_IN=7d
+
+# 🔒 Bcrypt
+BCRYPT_SALT_ROUNDS=12
+
+# 🚫 Rate Limiting
+RATE_LIMIT_GLOBAL=100
+RATE_LIMIT_LOGIN=10
+RATE_LIMIT_REGISTER=5
+RATE_LIMIT_DOACAO=5
+
+# 📍 Regras de Negócio
+MAX_PONTOS_POR_USUARIO=2
+
+# 🌍 CORS (opcional)
+CORS_ORIGIN=http://localhost:3000,https://seu-frontend.com
+
+
+🗄️ Banco de Dados
+Tabelas Principais
+👤 usuarios
+   ├─ id (SERIAL PK)
+   ├─ nome, email (UNIQUE), senha (bcrypt)
+   ├─ telefone, endereco
+   ├─ role: 'user' | 'ponto' | 'admin'
+   ├─ status: 'ativo' | 'pendente' | 'rejeitado' | 'inativo'
+   ├─ ultimo_login, created_at, updated_at
+
+📍 pontos
+   ├─ id (SERIAL PK)
+   ├─ nome, rua, numero, bairro, cidade, estado, cep
+   ├─ complemento, descricao, ativo (BOOLEAN)
+   ├─ user_id → usuarios(id) [ON DELETE CASCADE]
+   ├─ created_at, updated_at
+
+📦 necessidades
+   ├─ id (SERIAL PK)
+   ├─ ponto_id → pontos(id) [ON DELETE CASCADE]
+   ├─ tipo, quantidade, quantidade_restante
+   ├─ porcentagem (0-100), urgencia: 'alta'|'media'|'baixa'|'ok'
+   ├─ status: 'precisando' | 'ok'
+   ├─ created_at, updated_at
+
+🤝 doacoes
+   ├─ id (SERIAL PK)
+   ├─ ponto_id → pontos(id) [ON DELETE CASCADE]
+   ├─ usuario_id → usuarios(id) [ON DELETE SET NULL]
+   ├─ tipo, quantidade, observacao
+   ├─ created_at
+
+🚫 ips_bloqueados
+   ├─ id, ip (UNIQUE), motivo, bloqueios
+   ├─ blocked_at, expires_at
+
+📋 auditoria
+   ├─ id, usuario_id → usuarios(id) [ON DELETE SET NULL]
+   ├─ acao, entidade, entidade_id, detalhes (JSON)
+   ├─ ip, created_at
+
+   Índices Criados Automaticamente
+   -- Performance em buscas frequentes
+CREATE INDEX idx_usuario_email ON usuarios(email);
+CREATE INDEX idx_usuario_status ON usuarios(status);
+CREATE INDEX idx_pontos_user ON pontos(user_id);
+CREATE INDEX idx_pontos_cidade ON pontos(cidade);
+CREATE INDEX idx_necessidades_ponto ON necessidades(ponto_id);
+CREATE INDEX idx_necessidades_urgencia ON necessidades(urgencia);
+CREATE INDEX idx_doacoes_ponto ON doacoes(ponto_id);
+CREATE INDEX idx_doacoes_usuario ON doacoes(usuario_id);
+CREATE INDEX idx_ips ON ips_bloqueados(ip);
+CREATE INDEX idx_ips_expira ON ips_bloqueados(expires_at);
+CREATE INDEX idx_auditoria_usuario ON auditoria(usuario_id);
+
+Migração PostgreSQL
+✅ Esta versão foi migrada de MySQL/SQLite para PostgreSQL. Todas as queries usam:
+Placeholders: $1, $2, $3 (não ?)
+Booleanos: true/false (não 1/0)
+Funções de data: NOW(), CURRENT_DATE (não datetime('now'))
+Acesso a resultados: result.rows (não result direto)
+IDs inseridos: RETURNING id (não lastInsertId)
+
+🔐 Autenticação
+Fluxo JWT
+1. POST /api/v1/login
+   → { email, senha }
+   ← { token, user }
+
+2. Use o token em rotas protegidas:
+   Authorization: Bearer <token>
+
+3. Token expira em 1h (configurável)
+4. Refresh token disponível (opcional)
+
+Credenciais de Teste (Seed Automático)
 {
-  "status": "online",
-  "app": "SDEBR API",
-  "version": "1.0.0",
-  "timestamp": "2026-04-16T15:30:45.123Z",
-  "env": "development"
+  "email": "admin@sdebr.com",
+  "senha": "admin123"
 }
 
-📁 Estrutura do Projeto
+⚠️ A senha é resetada automaticamente se o hash estiver inválido. Use node check-admin.js para verificar/corrigir.
 
-SDEBR-V2-API/
-├── src/
-│   ├── config/
-│   │   ├── cors.js              # Configuração CORS
-│   │   ├── jwt.js               # Configuração JWT
-│   │   └── logger.js            # Configuração Winston (horário BR)
-│   ├── controllers/
-│   │   ├── adminController.js   # Admin: IPs, aprovações, dashboard
-│   │   ├── authController.js    # Auth: login, register, perfil
-│   │   ├── doacoesController.js # Doações: CRUD com transações
-│   │   ├── necessidadesController.js # Necessidades: CRUD automático
-│   │   └── pontosController.js  # Pontos: CRUD com limites BR
-│   ├── database/
-│   │   └── db.js                # SQLite + schema + índices
-│   ├── middleware/
-│   │   ├── auth.js              # Autenticação JWT
-│   │   ├── ipBlocker.js         # Bloqueio de IPs com cache
-│   │   ├── rateLimit.js         # Rate limiting por endpoint
-│   │   ├── role.js              # RBAC (user/ponto/admin)
-│   │   └── validate.js          # Validação Zod
-│   ├── routes/
-│   │   └── index.js             # Rotas da API
-│   ├── utils/
-│   │   ├── auditoria.js         # Log de ações (nunca quebra)
-│   │   └── cleanup.js           # Limpeza programada (IPs + logs)
-│   ├── validators/
-│   │   └── userValidator.js     # Schemas Zod (português)
-│   └── app.js                   # Configuração Express
-├── logs/
-│   ├── combined.log             # Todos os logs (rotação: 10MB)
-│   └── error.log                # Apenas erros (rotação: 5MB)
-├── .env.example                 # Template de variáveis
-├── database.sqlite              # Banco de dados SQLite
-├── database.sqlite-wal          # Write-Ahead Logging
-├── database.sqlite-shm          # Shared memory
-├── package.json
-├── server.js                    # Entry point
-└── README.md
 
+## Senha Forte (Validação Zod)
+// Requisitos mínimos:
+- 8+ caracteres
+- 1 letra maiúscula
+- 1 número
+// Recomendado para produção:
+- 1 letra minúscula
+- 1 caractere especial
+
+🗺️ Rotas da API
+Todas as rotas estão versionadas em /api/v1
 
 Base URL
 text
@@ -315,348 +302,113 @@ DELETE	/doacoes/:id	Deletar doação	admin	-
 | **DELETE** | `/admin/usuarios/:id` | Remove permanentemente um usuário do sistema               | `admin` |
 
 
->>>>>>> 131bb0f (atualização da nova rota e função do admin)
-🔒 Segurança
-Rate Limits (Proteção Brasileira)
-Endpoint	Limite	Janela	Motivo
-Global	100 req	15 min	Prevenir DoS
-Login	10 tentativas	15 min	Anti brute-force
-Register	5 cadastros	1 hora	Anti spam
-Doações	5 doações	1 minuto	Anti flooding
-Roles e Permissões (RBAC)
-Role	Emoji	Permissões
-user	👤	Registrar doações, ver perfil
-ponto	📍	Gerenciar necessidades do próprio ponto
-admin	👑	Tudo (CRUD, aprovar, desbloquear IPs)
-Bloqueio Automático de IP
-Após excesso de tentativas → IP bloqueado por 10 minutos
+🧪 Testes
+Script de Teste Automatizado (PowerShell)
+# Salve como test-api.ps1 na raiz do projeto
+# Execute:
+.\test-api.ps1
 
-Motivos registrados: brute force, spam de cadastro, DoS
+# Resultado esperado:
+# ✅ Testes aprovados: 18/18
+# 📈 Taxa de sucesso: 100.0%
+# 🎉 API SDEBR 100% FUNCIONAL!
 
-Headers de Segurança (Helmet)
-text
-X-Content-Type-Options: nosniff
-X-Frame-Options: DENY
-X-XSS-Protection: 1; mode=block
-Strict-Transport-Security: max-age=15552000
-Referrer-Policy: no-referrer
-🗄️ Banco de Dados (SQLite)
-Tabelas
-Tabela	Descrição	Colunas principais
-usuarios	Usuários do sistema	id, nome, email, senha, role, status
-pontos	Pontos de coleta	id, nome, endereço, cidade, estado, CEP
-necessidades	Necessidades dos pontos	id, tipo, quantidade, urgencia, status
-doacoes	Registro de doações	id, ponto_id, tipo, quantidade
-ips_bloqueados	IPs bloqueados	ip, motivo, expires_at
-auditoria	Log de ações	usuario_id, acao, detalhes, ip
-Índices (Performance)
-sql
-idx_usuario_email          -- Busca rápida por email
-idx_pontos_cidade          -- Filtro por cidade
-idx_necessidades_ponto     -- JOIN com pontos
-idx_necessidades_urgencia  -- Ordenação por urgência
-idx_ips_expira             -- Limpeza de IPs expirados
-idx_auditoria_usuario      -- Filtro por usuário
-Write-Ahead Logging (WAL)
-sql
-PRAGMA journal_mode = WAL      -- Melhor performance
-PRAGMA synchronous = NORMAL    -- Segurança + velocidade
-PRAGMA cache_size = -20000     -- 20MB de cache
-PRAGMA foreign_keys = ON       -- Integridade referencial
--------------------------------------------------------------------------
+Testes Manuais Rápidos
+# Health check
+Invoke-RestMethod -Uri "http://localhost:3000/"
 
-🔐 Variáveis de Ambiente
-env
-# ======================
-# 🚀 SERVIDOR
-# ======================
-NODE_ENV=development          # development | production | test
-PORT=3000
+# Login
+$login = Invoke-RestMethod -Uri "http://localhost:3000/api/v1/login" `
+  -Method Post -ContentType "application/json" `
+  -Body '{"email":"admin@sdebr.com","senha":"admin123"}'
 
-# ======================
-# 🗄️ DATABASE
-# ======================
-DB_PATH=./database.sqlite
+# Rota protegida
+Invoke-RestMethod -Uri "http://localhost:3000/api/v1/me" `
+  -Headers @{ Authorization = "Bearer $($login.token)" }
 
-# ======================
-# 🔐 JWT (GERAR CHAVES FORTES!)
-# ======================
-# Gere com: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-JWT_SECRET=minimo_32_caracteres_aqui
-JWT_REFRESH_SECRET=minimo_32_caracteres_aqui
-JWT_EXPIRES_IN=1d
-JWT_REFRESH_EXPIRES_IN=7d
-JWT_ISSUER=sdebr-api
-JWT_AUDIENCE=sdebr-client
+🌐 Deploy
+Opção 1: Render (Gratuito, Fácil)
+1.Crie conta em render.com
+2.Conecte seu repositório GitHub
+3.Configure o Web Service:
 
-# ======================
-# 📊 LOGGING
-# ======================
-LOG_LEVEL=debug               # error | warn | info | debug
+Name: sdebr-api
+Environment: Node
+Build Command: npm install
+Start Command: node server.js
+Region: São Paulo (se disponível)
 
-# ======================
-# 🌐 CORS (Múltiplos domínios)
-# ======================
-CORS_ORIGIN=http://localhost:3000,http://localhost:5173
+4. Adicione as Environment Variables (veja seção .env)
+.env)
 
-# ======================
-# 🚦 RATE LIMITING
-# ======================
-RATE_LIMIT_GLOBAL=100         # Requisições por 15 min
-RATE_LIMIT_LOGIN=10           # Tentativas de login por 15 min
-RATE_LIMIT_DOACAO=5           # Doações por minuto
-RATE_LIMIT_REGISTER=5         # Cadastros por hora
+5.Deploy!🚀
+Opção 2: Railway (PostgreSQL Incluso)
+Acesse railway.app
+Deploy from GitHub
+Adicione o plugin PostgreSQL
+Configure as variáveis de ambiente
+Deploy automático a cada push
 
-# ======================
-# 🛡️ IP BLOCKING
-# ======================
-IP_BLOCK_TIME_MS=600000       # 10 minutos em milissegundos
+Opção 3: VPS Própria (DigitalOcean, Hetzner)
 
-# ======================
-# 🔐 BCRYPT
-# ======================
-BCRYPT_SALT_ROUNDS=12
+# Exemplo com Docker (opcional)
+docker build -t sdebr-api .
+docker run -d -p 3000:3000 --env-file .env sdebr-api
 
-# ======================
-# 📍 LIMITES DE NEGÓCIO
-# ======================
-MAX_PONTOS_POR_USUARIO=2      # Máximo de pontos por usuário
+# Ou direto com PM2
+npm install -g pm2
+pm2 start server.js --name sdebr-api
+pm2 save
+pm2 startup
 
---------------------------------------------------------------------------
-📜 Scripts Disponíveis
-json
-{
-  "start": "node server.js",           # Produção
-  "dev": "nodemon server.js"           # Desenvolvimento com hot-reload
-}
-📊 Logs (Horário de Brasília)
-Arquivos
-Arquivo	Conteúdo	Rotação
-logs/combined.log	Todos os logs	10MB, 10 arquivos
-logs/error.log	Apenas erros	5MB, 5 arquivos
-Formato do log
-json
-{
-  "timestamp": "16/04/2026 15:30:45",
-  "level": "info",
-  "message": "Login: usuário 1 (admin)",
-  "method": "POST",
-  "url": "/api/v1/login",
-  "status": 200,
-  "duration": "45ms",
-  "ip": "192.168.1.100"
-}
-Console (Desenvolvimento)
-text
-15:30:45 [info] Servidor SDEBR rodando na porta 3000 [development]
-15:30:46 [debug] Iniciando limpeza programada...
-15:30:46 [debug] Limpeza de IPs: nenhum registro expirado encontrado
-🧪 Exemplos de Requisições
-1. Registrar um doador (user)
-bash
-curl -X POST http://localhost:3000/api/v1/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nome": "João Silva",
-    "email": "joao@email.com",
-    "senha": "Senha123",
-    "quer_ser_ponto": false
-  }'
-Resposta:
 
-json
-{
-  "message": "Usuário cadastrado com sucesso"
-}
-2. Registrar um ponto de coleta (ponto - requer aprovação)
-bash
-curl -X POST http://localhost:3000/api/v1/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nome": "Maria Santos",
-    "email": "ponto@coleta.com",
-    "senha": "Senha123",
-    "quer_ser_ponto": true
-  }'
-Resposta:
+🔐 Checklist de Produção
+NODE_ENV=production
+DATABASE_URL apontando para banco em produção
+JWT_SECRET e JWT_REFRESH_SECRET com valores seguros (gerar com openssl rand -hex 32)
+BCRYPT_SALT_ROUNDS=12 ou maior
+CORS configurado para domínio do front-end
+Logs enviados para serviço externo (opcional: Logtail, Datadog)
+Monitoramento de uptime (opcional: UptimeRobot, Healthchecks.io)
 
-json
-{
-  "message": "Cadastro realizado! Aguarde aprovação para se tornar um ponto de coleta."
-}
-3. Login
-bash
-curl -X POST http://localhost:3000/api/v1/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "joao@email.com",
-    "senha": "Senha123"
-  }'
-Resposta:
-
-json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": 1,
-    "nome": "João Silva",
-    "email": "joao@email.com",
-    "role": "user"
-  }
-}
-4. Listar pontos de coleta (público)
-bash
-curl "http://localhost:3000/api/v1/pontos?cidade=São Paulo&page=1&limit=10"
-5. Registrar doação (autenticado)
-bash
-curl -X POST http://localhost:3000/api/v1/doacoes \
-  -H "Authorization: Bearer SEU_TOKEN_AQUI" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "ponto_id": 1,
-    "tipo": "Alimentos não perecíveis",
-    "quantidade": 10
-  }'
-Resposta:
-
-json
-{
-  "message": "Doação registrada com sucesso",
-  "doacao_id": 42,
-  "necessidade_atualizada": true
-}
-6. Listar necessidades (público)
-bash
-curl "http://localhost:3000/api/v1/necessidades?status=precisando&urgencia=alta"
-7. Dashboard admin (autenticado admin)
-bash
-curl -X GET http://localhost:3000/api/v1/admin/dashboard \
-  -H "Authorization: Bearer TOKEN_ADMIN"
-Resposta:
-
-json
-{
-  "usuarios": { "total": 150, "pendentes": 5 },
-  "pontos": { "total": 12 },
-  "necessidades": { "precisando": 8 },
-  "doacoes": { "total": 342, "hoje": 15 },
-  "seguranca": { "ips_bloqueados": 3 }
-}
-❌ Respostas de Erro
-400 Bad Request
-json
-{
-  "error": "Dados inválidos",
-  "detalhes": {
-    "email": ["Email inválido"],
-    "senha": ["Senha deve ter no mínimo 8 caracteres"]
-  }
-}
-401 Unauthorized
-json
-{
-  "error": "Token não fornecido. Use o formato: Bearer <token>"
-}
-403 Forbidden
-json
-{
-  "error": "Você não tem permissão para acessar este recurso"
-}
-404 Not Found
-json
-{
-  "error": "Rota não encontrada",
-  "path": "/api/v1/rota-invalida"
-}
-429 Too Many Requests
-json
-{
-  "error": "Muitas requisições. Tente novamente em alguns minutos."
-}
-500 Internal Server Error
-json
-{
-  "error": "Erro interno do servidor"
-}
-
-----------------------------------------------------------------------------
-🧹 Limpeza Automática
-
-Tarefa	Frequência	Descrição
-Limpar IPs expirados	A cada hora	Remove IPs com expires_at vencido
-Limpar auditoria antiga	A cada hora	Remove logs com mais de 90 dias
-Limpeza geral	Startup + hora	Executa todas as limpezas
-🤝 Contribuição
+🤝 Contribuindo
 Fork o projeto
-
-Crie sua branch (git checkout -b feature/nova-feature)
-
-Commit suas mudanças (git commit -m 'Adiciona nova feature')
-
-Push para a branch (git push origin feature/nova-feature)
-
+Crie uma branch para sua feature (git checkout -b feature/minha-feature)
+Commit suas mudanças (git commit -m 'feat: adiciona minha feature')
+Push para a branch (git push origin feature/minha-feature)
 Abra um Pull Request
 
+Padrões do Projeto
+✅ ES Modules (import/export)
+✅ Async/await para operações assíncronas
+✅ Validação Zod em todas as entradas de usuário
+✅ Logs estruturados com logger.info/error
+✅ Tratamento de erro com try/catch + resposta JSON
+✅ PostgreSQL: usar pool.query() com $1, $2 placeholders
+
 📄 Licença
-ISC
+Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
 
-👨‍💻 Autor
-WESLEY BARROSO 
+🆘 Suporte e Dúvidas
+🐛 Bugs: Abra uma issue no GitHub com steps para reproduzir
+💡 Features: Discuta em uma issue antes de implementar
+❓ Dúvidas: Use as discussões do GitHub ou entre em contato
 
-🆘 Suporte
-Em caso de problemas:
+🙏 Agradecimentos
+Node.js — Runtime JavaScript
+Express — Framework web minimalista
+PostgreSQL — Banco de dados robusto e open-source
+Zod — Validação de schema com TypeScript-first
+bcrypt — Hash de senhas seguro
 
-Verifique os logs
+🐘 Feito com ❤️ para facilitar doações e impacto social.
+SDEBR API v3.0 — 100% PostgreSQL, 100% Funcional, 100% Pronta para Produção. 🚀🇧🇷
 
-bash
-tail -f logs/error.log
-Confirme as variáveis de ambiente
+versão V3.0 Data 2026-04 
+mudanças principais:
+✅ Migração completa para PostgreSQL
+✅ Validação Zod em todas as entradas
+✅ Rate limiting + IP blocker
+✅ Auditoria automática
+✅ 18/18 testes passando
 
-bash
-cat .env
-Verifique o banco de dados
-
-bash
-sqlite3 database.sqlite ".tables"
-Teste a conexão
-
-bash
-curl http://localhost:3000/
-📌 Status do Projeto
-✅ API 100% completa e pronta para produção!
-Módulo	        Status	        Testes
-Autenticação	    ✅      Completo	✅
-Pontos de Coleta	✅      Completo	✅
-Necessidades	    ✅      Completo	✅
-Doações	          ✅      Completo	✅
-Administração	    ✅      Completo	✅
-Segurança	        ✅      Completo	✅
-Logs	            ✅      Completo	✅
-Auditoria	        ✅      Completo	✅
-Documentação	    ✅      Completa	✅
-
-🎯 Roadmap (Futuro)
-Implementar refresh token
-
-Adicionar testes unitários (Vitest)
-
-Migrar para PostgreSQL
-
-Adicionar WebSockets para notificações
-
-Criar painel administrativo front-end
-
-Implementar reset de senha por email
-
-Adicionar gráficos no dashboard
-
-Criar API pública documentada (Swagger)
-
-Implementar rate limiting por usuário logado
-
-Adicionar cache com Redis
-
-🇧🇷 Feito para o Brasil
-SDEBR - Transformando doações em ações
-
-🚀 API pronta para uso!

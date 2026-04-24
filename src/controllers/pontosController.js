@@ -1,4 +1,5 @@
-import { connectDB } from '../database/db.js';
+// src/controllers/pontosController.js
+import pool from '../database/db.js';
 import { logger } from '../config/logger.js';
 import { registrarAuditoria } from '../utils/auditoria.js';
 
@@ -8,45 +9,49 @@ import { registrarAuditoria } from '../utils/auditoria.js';
 export async function criarPonto(req, res) {
   try {
     const { nome, rua, numero, bairro, cidade, estado, cep, complemento, descricao } = req.body;
-    // validação já feita pelo middleware validate(criarPontoSchema)
 
-    const db = await connectDB();
     const MAX_PONTOS = parseInt(process.env.MAX_PONTOS_POR_USUARIO) || 2;
 
-    const pontos = await db.all(
-      'SELECT id, cidade FROM pontos WHERE user_id = ?',
+    // ✅ Verifica quantos pontos o usuário já tem
+    const existingResult = await pool.query(
+      'SELECT id, cidade FROM pontos WHERE user_id = $1',
       [req.user.id]
     );
+    const pontos = existingResult.rows;
 
     if (pontos.length >= MAX_PONTOS) {
       return res.status(400).json({ error: `Você já atingiu o limite de ${MAX_PONTOS} ponto(s) de coleta` });
     }
 
-    if (pontos.length > 0 && pontos[0].cidade.toLowerCase() !== cidade.toLowerCase()) {
+    if (pontos.length > 0 && pontos[0].cidade?.toLowerCase() !== cidade?.toLowerCase()) {
       return res.status(400).json({
         error: 'Todos os seus pontos devem ser na mesma cidade'
       });
     }
 
-    const result = await db.run(
-      `INSERT INTO pontos (nome, rua, numero, bairro, cidade, estado, cep, complemento, descricao, user_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    // ✅ INSERT com RETURNING para pegar o ID
+    const result = await pool.query(
+      `INSERT INTO pontos (nome, rua, numero, bairro, cidade, estado, cep, complemento, descricao, user_id, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+       RETURNING id`,
       [nome, rua, numero, bairro, cidade, estado, cep, complemento, descricao, req.user.id]
     );
+
+    const novoId = result.rows[0].id;
 
     await registrarAuditoria({
       usuario_id: req.user.id,
       acao: 'CRIAR_PONTO',
       entidade: 'pontos',
-      entidade_id: result.lastID,
+      entidade_id: novoId,
       ip: req.ip
     });
 
-    logger.info(`Ponto ${result.lastID} criado por usuário ${req.user.id}`);
-    res.status(201).json({ id: result.lastID, message: 'Ponto de coleta criado com sucesso' });
+    logger.info(`Ponto ${novoId} criado por usuário ${req.user.id}`);
+    res.status(201).json({ id: novoId, message: 'Ponto de coleta criado com sucesso' });
 
   } catch (err) {
-    logger.error('Erro ao criar ponto:', err);
+    logger.error('Erro ao criar ponto:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
@@ -61,45 +66,57 @@ export async function listarPontos(req, res) {
     const offset = (page - 1) * limit;
     const { cidade, estado, busca } = req.query;
 
-    const db = await connectDB();
-
+    // ✅ Query base com placeholders dinâmicos
     let query = `
       SELECT p.id, p.nome, p.rua, p.numero, p.bairro, p.cidade, p.estado, p.cep,
              p.complemento, p.descricao, p.ativo, p.created_at,
              u.nome as responsavel
       FROM pontos p
       LEFT JOIN usuarios u ON p.user_id = u.id
-      WHERE p.ativo = 1
+      WHERE p.ativo = true
     `;
     const params = [];
+    let paramIndex = 1;
 
-    if (cidade) { query += ' AND LOWER(p.cidade) = LOWER(?)'; params.push(cidade); }
-    if (estado) { query += ' AND UPPER(p.estado) = UPPER(?)'; params.push(estado); }
-    if (busca) { query += ' AND (LOWER(p.nome) LIKE LOWER(?) OR LOWER(p.bairro) LIKE LOWER(?))'; params.push(`%${busca}%`, `%${busca}%`); }
+    if (cidade) {
+      query += ` AND LOWER(p.cidade) = LOWER($${paramIndex++})`;
+      params.push(cidade);
+    }
+    if (estado) {
+      query += ` AND UPPER(p.estado) = UPPER($${paramIndex++})`;
+      params.push(estado);
+    }
+    if (busca) {
+      query += ` AND (LOWER(p.nome) LIKE LOWER($${paramIndex++}) OR LOWER(p.bairro) LIKE LOWER($${paramIndex++}))`;
+      params.push(`%${busca}%`, `%${busca}%`);
+    }
 
+    // Count query
     const countQuery = query.replace(
       /SELECT.*?FROM pontos/s,
       'SELECT COUNT(*) as total FROM pontos'
     );
-    const total = await db.get(countQuery, params);
+    const totalResult = await pool.query(countQuery, params);
+    const total = parseInt(totalResult.rows[0].total);
 
-    query += ' ORDER BY p.nome ASC LIMIT ? OFFSET ?';
+    // Adiciona paginação
+    query += ` ORDER BY p.nome ASC LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
     params.push(limit, offset);
 
-    const pontos = await db.all(query, params);
+        const result = await pool.query(query, params);
 
-    res.json({
-      data: pontos,
+        res.json({
+      data: result.rows,
       paginacao: {
-        total: total.total,
+        total,
         page,
         limit,
-        paginas: Math.ceil(total.total / limit)
+        paginas: Math.ceil(total / limit)
       }
     });
 
   } catch (err) {
-    logger.error('Erro ao listar pontos:', err);
+    logger.error('Erro ao listar pontos:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
@@ -110,25 +127,27 @@ export async function listarPontos(req, res) {
 export async function buscarPonto(req, res) {
   try {
     const { id } = req.params;
-    const db = await connectDB();
 
-    const ponto = await db.get(
+    // ✅ Busca ponto principal
+    const pontoResult = await pool.query(
       `SELECT p.*, u.nome as responsavel, u.email as responsavel_email
        FROM pontos p
        LEFT JOIN usuarios u ON p.user_id = u.id
-       WHERE p.id = ? AND p.ativo = 1`,
+       WHERE p.id = $1 AND p.ativo = true`,
       [id]
     );
+
+    const ponto = pontoResult.rows[0];
 
     if (!ponto) {
       return res.status(404).json({ error: 'Ponto não encontrado' });
     }
 
-    // busca necessidades do ponto junto
-    const necessidades = await db.all(
+    // ✅ Busca necessidades do ponto
+    const necessidadesResult = await pool.query(
       `SELECT id, tipo, quantidade, quantidade_restante, porcentagem, urgencia, status
        FROM necessidades 
-       WHERE ponto_id = ? AND status = 'precisando'
+       WHERE ponto_id = $1 AND status = 'precisando'
        ORDER BY 
          CASE urgencia 
            WHEN 'alta' THEN 1 
@@ -140,10 +159,10 @@ export async function buscarPonto(req, res) {
       [id]
     );
 
-    res.json({ ...ponto, necessidades });
+    res.json({ ...ponto, necessidades: necessidadesResult.rows });
 
   } catch (err) {
-    logger.error('Erro ao buscar ponto:', err);
+    logger.error('Erro ao buscar ponto:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
@@ -155,37 +174,36 @@ export async function atualizarPonto(req, res) {
   try {
     const { id } = req.params;
     const { nome, rua, numero, bairro, cidade, estado, cep, complemento, descricao } = req.body;
-    // validação já feita pelo middleware validate(atualizarPontoSchema)
 
-    const db = await connectDB();
-
-    const ponto = await db.get(
-      'SELECT id, user_id FROM pontos WHERE id = ?',
+    // ✅ Verifica se ponto existe e permissão
+    const pontoResult = await pool.query(
+      'SELECT id, user_id FROM pontos WHERE id = $1',
       [id]
     );
+    const ponto = pontoResult.rows[0];
 
     if (!ponto) {
       return res.status(404).json({ error: 'Ponto não encontrado' });
     }
 
-    if (req.user.role !== 'admin' && ponto.user_id !== req.user.id) {
+    if (req.user.role !== 'admin' && ponto.user_id !== req.user?.id) {
       return res.status(403).json({ error: 'Você não tem permissão para editar este ponto' });
     }
 
-    // COALESCE mantém o valor atual se o campo não for enviado
-    await db.run(
+    // ✅ UPDATE com COALESCE e parâmetros numerados
+    await pool.query(
       `UPDATE pontos SET
-        nome        = COALESCE(?, nome),
-        rua         = COALESCE(?, rua),
-        numero      = COALESCE(?, numero),
-        bairro      = COALESCE(?, bairro),
-        cidade      = COALESCE(?, cidade),
-        estado      = COALESCE(?, estado),
-        cep         = COALESCE(?, cep),
-        complemento = COALESCE(?, complemento),
-        descricao   = COALESCE(?, descricao),
-        updated_at  = CURRENT_TIMESTAMP
-       WHERE id = ?`,
+        nome        = COALESCE($1, nome),
+        rua         = COALESCE($2, rua),
+        numero      = COALESCE($3, numero),
+        bairro      = COALESCE($4, bairro),
+        cidade      = COALESCE($5, cidade),
+        estado      = COALESCE($6, estado),
+        cep         = COALESCE($7, cep),
+        complemento = COALESCE($8, complemento),
+        descricao   = COALESCE($9, descricao),
+        updated_at  = NOW()
+       WHERE id = $10`,
       [nome, rua, numero, bairro, cidade, estado, cep, complemento, descricao, id]
     );
 
@@ -201,7 +219,7 @@ export async function atualizarPonto(req, res) {
     res.json({ message: 'Ponto atualizado com sucesso' });
 
   } catch (err) {
-    logger.error('Erro ao atualizar ponto:', err);
+    logger.error('Erro ao atualizar ponto:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
@@ -212,23 +230,24 @@ export async function atualizarPonto(req, res) {
 export async function deletarPonto(req, res) {
   try {
     const { id } = req.params;
-    const db = await connectDB();
 
-    const ponto = await db.get(
-      'SELECT id, user_id, nome FROM pontos WHERE id = ?',
+    // ✅ Verifica ponto e permissão
+    const pontoResult = await pool.query(
+      'SELECT id, user_id, nome FROM pontos WHERE id = $1',
       [id]
     );
+    const ponto = pontoResult.rows[0];
 
     if (!ponto) {
       return res.status(404).json({ error: 'Ponto não encontrado' });
     }
 
-    if (req.user.role !== 'admin' && ponto.user_id !== req.user.id) {
+    if (req.user.role !== 'admin' && ponto.user_id !== req.user?.id) {
       return res.status(403).json({ error: 'Você não tem permissão para deletar este ponto' });
     }
 
-    // CASCADE no banco já deleta necessidades e doações vinculadas
-    await db.run('DELETE FROM pontos WHERE id = ?', [id]);
+    // ✅ DELETE (CASCADE no banco deleta necessidades/doações vinculadas)
+    await pool.query('DELETE FROM pontos WHERE id = $1', [id]);
 
     await registrarAuditoria({
       usuario_id: req.user.id,
@@ -243,7 +262,7 @@ export async function deletarPonto(req, res) {
     res.json({ message: 'Ponto deletado com sucesso' });
 
   } catch (err) {
-    logger.error('Erro ao deletar ponto:', err);
+    logger.error('Erro ao deletar ponto:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
@@ -253,23 +272,22 @@ export async function deletarPonto(req, res) {
 // ======================
 export async function meusPontos(req, res) {
   try {
-    const db = await connectDB();
-
-    const pontos = await db.all(
+    // ✅ Query com subqueries para contagens
+    const result = await pool.query(
       `SELECT p.*, 
         (SELECT COUNT(*) FROM necessidades n WHERE n.ponto_id = p.id AND n.status = 'precisando') as necessidades_pendentes,
         (SELECT COUNT(*) FROM necessidades n WHERE n.ponto_id = p.id) as total_necessidades,
         (SELECT COUNT(*) FROM doacoes d WHERE d.ponto_id = p.id) as total_doacoes
        FROM pontos p
-       WHERE p.user_id = ?
+       WHERE p.user_id = $1
        ORDER BY p.created_at DESC`,
       [req.user.id]
     );
 
-    res.json(pontos);
+    res.json(result.rows);
 
   } catch (err) {
-    logger.error('Erro ao buscar meus pontos:', err);
+    logger.error('Erro ao buscar meus pontos:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }

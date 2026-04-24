@@ -1,4 +1,5 @@
-import { connectDB } from '../database/db.js';
+// src/controllers/adminController.js
+import pool from '../database/db.js';
 import { logger } from '../config/logger.js';
 import { registrarAuditoria } from '../utils/auditoria.js';
 import { unblockIP } from '../middleware/ipBlocker.js';
@@ -7,71 +8,72 @@ import { unblockIP } from '../middleware/ipBlocker.js';
 // 🚫 IPS BLOQUEADOS
 // ======================
 
-// listar IPs bloqueados (com paginação)
 export async function listarIPsBloqueados(req, res) {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, parseInt(req.query.limit) || 20);
     const offset = (page - 1) * limit;
 
-    const db = await connectDB();
-
-    const [ips, total] = await Promise.all([
-      db.all(
+    // ✅ PostgreSQL: usa pool.query() com $1, $2
+    const [ipsResult, totalResult] = await Promise.all([
+      pool.query(
         `SELECT id, ip, motivo, bloqueios, blocked_at, expires_at
          FROM ips_bloqueados
          ORDER BY blocked_at DESC
-         LIMIT ? OFFSET ?`,
+         LIMIT $1 OFFSET $2`,
         [limit, offset]
       ),
-      db.get('SELECT COUNT(*) as total FROM ips_bloqueados')
+      pool.query('SELECT COUNT(*) as total FROM ips_bloqueados')
     ]);
 
     res.json({
-      data: ips,
+      data: ipsResult.rows,  // ✅ Acessa .rows no PostgreSQL
       paginacao: {
-        total: total.total,
+        total: parseInt(totalResult.rows[0].total),
         page,
         limit,
-        paginas: Math.ceil(total.total / limit)
+        paginas: Math.ceil(totalResult.rows[0].total / limit)
       }
     });
 
   } catch (err) {
-    logger.error('Erro ao listar IPs bloqueados:', err);
+    logger.error('Erro ao listar IPs bloqueados:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
 
-// desbloquear IP manualmente
 export async function desbloquearIP(req, res) {
   try {
     const { ip } = req.params;
-    const db = await connectDB();
 
-    const existe = await db.get(
-      'SELECT id FROM ips_bloqueados WHERE ip = ?',
+    // ✅ Verifica se existe
+    const checkResult = await pool.query(
+      'SELECT id FROM ips_bloqueados WHERE ip = $1',
       [ip]
     );
 
-    if (!existe) {
+    if (checkResult.rows.length === 0) {
       return res.status(404).json({ error: 'IP não encontrado na lista de bloqueios' });
     }
 
+    // ✅ Usa a função exportada do middleware
     await unblockIP(ip);
 
-    await registrarAuditoria({
-      usuario_id: req.user.id,
-      acao: 'DESBLOQUEAR_IP',
-      detalhes: { ip },
-      ip: req.ip
-    });
+    // ✅ Auditoria (se usuário autenticado)
+    if (req.user?.id) {
+      await registrarAuditoria({
+        usuario_id: req.user.id,
+        acao: 'DESBLOQUEAR_IP',
+        detalhes: { ip },
+        ip: req.ip
+      });
+      logger.info(`Admin ${req.user.id} desbloqueou IP: ${ip}`);
+    }
 
-    logger.info(`Admin ${req.user.id} desbloqueou IP: ${ip}`);
     res.json({ message: 'IP desbloqueado com sucesso' });
 
   } catch (err) {
-    logger.error('Erro ao desbloquear IP:', err);
+    logger.error('Erro ao desbloquear IP:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
@@ -80,136 +82,151 @@ export async function desbloquearIP(req, res) {
 // 👤 APROVAÇÃO DE PONTOS
 // ======================
 
-// listar solicitações pendentes (com paginação)
 export async function listarSolicitacoes(req, res) {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, parseInt(req.query.limit) || 20);
     const offset = (page - 1) * limit;
 
-    const db = await connectDB();
-
-    const [users, total] = await Promise.all([
-      db.all(
-        `SELECT id, nome, email, telefone, endereco, status, created_at -- Adicionado telefone e endereco
+    const [usersResult, totalResult] = await Promise.all([
+      pool.query(
+        `SELECT id, nome, email, telefone, endereco, status, created_at
          FROM usuarios
          WHERE status = 'pendente'
          ORDER BY created_at ASC
-         LIMIT ? OFFSET ?`,
+         LIMIT $1 OFFSET $2`,
         [limit, offset]
       ),
-      db.get(`SELECT COUNT(*) as total FROM usuarios WHERE status = 'pendente'`)
+      pool.query(`SELECT COUNT(*) as total FROM usuarios WHERE status = 'pendente'`)
     ]);
 
     res.json({
-      data: users,
+      data: usersResult.rows,
       paginacao: {
-        total: total.total,
+        total: parseInt(totalResult.rows[0].total),
         page,
         limit,
-        paginas: Math.ceil(total.total / limit)
+        paginas: Math.ceil(totalResult.rows[0].total / limit)
       }
     });
 
   } catch (err) {
-    logger.error('Erro ao listar solicitações:', err);
+    logger.error('Erro ao listar solicitações:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
 
-// aprovar usuário como ponto
 export async function aprovarPonto(req, res) {
+  let client;
+  
   try {
     const { id } = req.params;
-    const db = await connectDB();
+    client = await pool.connect(); // ✅ Para transação
 
-    const user = await db.get(
-      'SELECT id, nome, status, role FROM usuarios WHERE id = ?',
+    // Verifica usuário
+    const userResult = await client.query(
+      'SELECT id, nome, status, role FROM usuarios WHERE id = $1',
       [id]
     );
 
-    if (!user) {
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
+    const user = userResult.rows[0];
 
     if (user.status === 'ativo' && user.role === 'ponto') {
       return res.status(400).json({ error: 'Usuário já é um ponto de coleta' });
     }
-
     if (user.status !== 'pendente') {
       return res.status(400).json({ error: 'Usuário não está aguardando aprovação' });
     }
 
-    await db.run(
-      `UPDATE usuarios SET status = 'ativo', role = 'ponto', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+    // Atualiza com transação
+    await client.query('BEGIN');
+    await client.query(
+      `UPDATE usuarios SET status = 'ativo', role = 'ponto', updated_at = NOW() WHERE id = $1`,
       [id]
     );
+    await client.query('COMMIT');
 
-    await registrarAuditoria({
-      usuario_id: req.user.id,
-      acao: 'APROVAR_PONTO',
-      entidade: 'usuarios',
-      entidade_id: id,
-      detalhes: { nome: user.nome },
-      ip: req.ip
-    });
+    // Auditoria
+    if (req.user?.id) {
+      await registrarAuditoria({
+        usuario_id: req.user.id,
+        acao: 'APROVAR_PONTO',
+        entidade: 'usuarios',
+        entidade_id: id,
+        detalhes: { nome: user.nome },
+        ip: req.ip
+      });
+      logger.info(`Admin ${req.user.id} aprovou usuário ${id} como ponto`);
+    }
 
-    logger.info(`Admin ${req.user.id} aprovou usuário ${id} como ponto`);
     res.json({ message: 'Usuário aprovado como ponto de coleta com sucesso' });
 
   } catch (err) {
-    logger.error('Erro ao aprovar ponto:', err);
+    if (client) await client.query('ROLLBACK');
+    logger.error('Erro ao aprovar ponto:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
+  } finally {
+    if (client) client.release(); // ✅ Sempre libera!
   }
 }
 
-// rejeitar solicitação
 export async function rejeitarPonto(req, res) {
+  let client;
+  
   try {
     const { id } = req.params;
-    const db = await connectDB();
+    client = await pool.connect();
 
-    const user = await db.get(
-      'SELECT id, nome, status, role FROM usuarios WHERE id = ?',
+    const userResult = await client.query(
+      'SELECT id, nome, status, role FROM usuarios WHERE id = $1',
       [id]
     );
 
-    if (!user) {
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
+    const user = userResult.rows[0];
 
     if (user.status === 'rejeitado') {
       return res.status(400).json({ error: 'Solicitação já foi rejeitada' });
     }
-
     if (user.role === 'admin') {
       return res.status(400).json({ error: 'Não é possível rejeitar um administrador' });
     }
-
     if (user.status !== 'pendente') {
       return res.status(400).json({ error: 'Usuário não está aguardando aprovação' });
     }
 
-    await db.run(
-      `UPDATE usuarios SET status = 'rejeitado', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+    await client.query('BEGIN');
+    await client.query(
+      `UPDATE usuarios SET status = 'rejeitado', updated_at = NOW() WHERE id = $1`,
       [id]
     );
+    await client.query('COMMIT');
 
-    await registrarAuditoria({
-      usuario_id: req.user.id,
-      acao: 'REJEITAR_PONTO',
-      entidade: 'usuarios',
-      entidade_id: id,
-      detalhes: { nome: user.nome },
-      ip: req.ip
-    });
+    if (req.user?.id) {
+      await registrarAuditoria({
+        usuario_id: req.user.id,
+        acao: 'REJEITAR_PONTO',
+        entidade: 'usuarios',
+        entidade_id: id,
+        detalhes: { nome: user.nome },
+        ip: req.ip
+      });
+      logger.warn(`Admin ${req.user.id} rejeitou usuário ${id}`);
+    }
 
-    logger.warn(`Admin ${req.user.id} rejeitou usuário ${id}`);
     res.json({ message: 'Solicitação rejeitada' });
 
   } catch (err) {
-    logger.error('Erro ao rejeitar ponto:', err);
+    if (client) await client.query('ROLLBACK');
+    logger.error('Erro ao rejeitar ponto:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
+  } finally {
+    if (client) client.release();
   }
 }
 
@@ -218,44 +235,43 @@ export async function rejeitarPonto(req, res) {
 // ======================
 export async function getDashboard(req, res) {
   try {
-    const db = await connectDB();
-
+    // ✅ Usa pool.query() para todas as queries
     const [
-      totalUsuarios,
-      pendentes,
-      totalPontos,
-      totalNecessidades,
-      totalDoacoes,
-      ipsBloqueados,
-      doacoesHoje
+      totalUsuariosResult,
+      pendentesResult,
+      totalPontosResult,
+      totalNecessidadesResult,
+      totalDoacoesResult,
+      ipsBloqueadosResult,
+      doacoesHojeResult
     ] = await Promise.all([
-      db.get('SELECT COUNT(*) as total FROM usuarios WHERE role != ?', ['admin']),
-      db.get(`SELECT COUNT(*) as total FROM usuarios WHERE status = 'pendente'`),
-      db.get('SELECT COUNT(*) as total FROM pontos'),
-      db.get(`SELECT COUNT(*) as total FROM necessidades WHERE status = 'precisando'`),
-      db.get('SELECT COUNT(*) as total FROM doacoes'),
-      db.get(`SELECT COUNT(*) as total FROM ips_bloqueados WHERE expires_at > datetime('now')`),
-      db.get(`SELECT COUNT(*) as total FROM doacoes WHERE DATE(created_at) = DATE('now')`)
+      pool.query('SELECT COUNT(*) as total FROM usuarios WHERE role != $1', ['admin']),
+      pool.query(`SELECT COUNT(*) as total FROM usuarios WHERE status = 'pendente'`),
+      pool.query('SELECT COUNT(*) as total FROM pontos'),
+      pool.query(`SELECT COUNT(*) as total FROM necessidades WHERE status = 'precisando'`),
+      pool.query('SELECT COUNT(*) as total FROM doacoes'),
+      pool.query(`SELECT COUNT(*) as total FROM ips_bloqueados WHERE expires_at > NOW()`),
+      pool.query(`SELECT COUNT(*) as total FROM doacoes WHERE DATE(created_at) = CURRENT_DATE`)
     ]);
 
     res.json({
       usuarios: {
-        total: totalUsuarios.total,
-        pendentes: pendentes.total
+        total: parseInt(totalUsuariosResult.rows[0].total),
+        pendentes: parseInt(pendentesResult.rows[0].total)
       },
-      pontos: { total: totalPontos.total },
-      necessidades: { precisando: totalNecessidades.total },
+      pontos: { total: parseInt(totalPontosResult.rows[0].total) },
+      necessidades: { precisando: parseInt(totalNecessidadesResult.rows[0].total) },
       doacoes: {
-        total: totalDoacoes.total,
-        hoje: doacoesHoje.total
+        total: parseInt(totalDoacoesResult.rows[0].total),
+        hoje: parseInt(doacoesHojeResult.rows[0].total)
       },
       seguranca: {
-        ips_bloqueados: ipsBloqueados.total
+        ips_bloqueados: parseInt(ipsBloqueadosResult.rows[0].total)
       }
     });
 
   } catch (err) {
-    logger.error('Erro no dashboard admin:', err);
+    logger.error('Erro no dashboard admin:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
@@ -269,32 +285,31 @@ export async function listarAuditoria(req, res) {
     const limit = Math.min(100, parseInt(req.query.limit) || 50);
     const offset = (page - 1) * limit;
 
-    const db = await connectDB();
-
-    const logs = await db.all(
-      `SELECT a.id, a.acao, a.entidade, a.entidade_id, a.detalhes, a.ip, a.created_at,
-              u.nome as usuario_nome, u.email as usuario_email
-       FROM auditoria a
-       LEFT JOIN usuarios u ON a.usuario_id = u.id
-       ORDER BY a.created_at DESC
-       LIMIT ? OFFSET ?`,
-      [limit, offset]
-    );
-
-    const total = await db.get('SELECT COUNT(*) as total FROM auditoria');
+    const [logsResult, totalResult] = await Promise.all([
+      pool.query(
+        `SELECT a.id, a.acao, a.entidade, a.entidade_id, a.detalhes, a.ip, a.created_at,
+                u.nome as usuario_nome, u.email as usuario_email
+         FROM auditoria a
+         LEFT JOIN usuarios u ON a.usuario_id = u.id
+         ORDER BY a.created_at DESC
+         LIMIT $1 OFFSET $2`,
+        [limit, offset]
+      ),
+      pool.query('SELECT COUNT(*) as total FROM auditoria')
+    ]);
 
     res.json({
-      data: logs,
+      data: logsResult.rows,
       paginacao: {
-        total: total.total,
+        total: parseInt(totalResult.rows[0].total),
         page,
         limit,
-        paginas: Math.ceil(total.total / limit)
+        paginas: Math.ceil(totalResult.rows[0].total / limit)
       }
     });
 
   } catch (err) {
-    logger.error('Erro ao listar auditoria:', err);
+    logger.error('Erro ao listar auditoria:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
@@ -304,15 +319,20 @@ export async function listarAuditoria(req, res) {
 // ======================
 export async function listarLogs(req, res) {
   try {
-    const db = await connectDB();
-    const logs = await db.all(`
+    // ⚠️ Tabela 'logs' pode não existir no seu schema - ajuste se necessário
+    const result = await pool.query(`
       SELECT * FROM logs 
       ORDER BY created_at DESC 
       LIMIT 100
     `);
-    res.json(logs);
+    res.json(result.rows);
   } catch (err) {
-    logger.error('Erro ao listar logs:', err);
+    // Se a tabela não existir, retorna array vazio sem quebrar
+    if (err.code === '42P01') { // table does not exist
+      logger.debug('Tabela logs não existe, retornando vazio');
+      return res.json([]);
+    }
+    logger.error('Erro ao listar logs:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
@@ -320,37 +340,34 @@ export async function listarLogs(req, res) {
 // ======================
 // 👥 LISTAR USUÁRIOS
 // ======================
-// Localize esta função e substitua o SELECT:
 export async function listarUsuarios(req, res) {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, parseInt(req.query.limit) || 20);
     const offset = (page - 1) * limit;
 
-    const db = await connectDB();
-
-    const [usuarios, total] = await Promise.all([
-      db.all(
-        `SELECT id, nome, email, telefone, endereco, role, status, created_at, ultimo_login -- Adicionado aqui também
+    const [usuariosResult, totalResult] = await Promise.all([
+      pool.query(
+        `SELECT id, nome, email, telefone, endereco, role, status, created_at, ultimo_login
          FROM usuarios
          ORDER BY created_at DESC
-         LIMIT ? OFFSET ?`,
+         LIMIT $1 OFFSET $2`,
         [limit, offset]
       ),
-      db.get('SELECT COUNT(*) as total FROM usuarios')
+      pool.query('SELECT COUNT(*) as total FROM usuarios')
     ]);
 
     res.json({
-      data: usuarios,
+      data: usuariosResult.rows,
       paginacao: {
-        total: total.total,
+        total: parseInt(totalResult.rows[0].total),
         page,
         limit,
-        paginas: Math.ceil(total.total / limit)
+        paginas: Math.ceil(totalResult.rows[0].total / limit)
       }
     });
   } catch (err) {
-    logger.error('Erro ao listar usuários:', err);
+    logger.error('Erro ao listar usuários:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
@@ -361,46 +378,46 @@ export async function listarUsuarios(req, res) {
 export async function deletarUsuario(req, res) {
   try {
     const { id } = req.params;
-    const adminId = req.user.id; // ID do administrador logado
-    const db = await connectDB();
-
-    // 1. Verificar se o usuário existe
-    const user = await db.get(
-      'SELECT id, nome, role FROM usuarios WHERE id = ?',
+    const adminId = req.user?.id;
+    
+    // ✅ Verifica se usuário existe
+    const userResult = await pool.query(
+      'SELECT id, nome, role FROM usuarios WHERE id = $1',
       [id]
     );
 
-    if (!user) {
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
+    const user = userResult.rows[0];
 
-    // 2. 🛡️ Segurança: Não permitir que o admin delete a si próprio
-    // Usamos Number() para garantir que a comparação seja entre números
+    // 🛡️ Segurança: não deletar a si mesmo
     if (Number(id) === Number(adminId)) {
       return res.status(400).json({ 
         error: 'Operação inválida: Você não pode deletar sua própria conta de administrador.' 
       });
     }
 
-    // 3. Executar a remoção
-    await db.run('DELETE FROM usuarios WHERE id = ?', [id]);
+    // ✅ Deleta (PostgreSQL usa RETURNING para confirmar)
+    await pool.query('DELETE FROM usuarios WHERE id = $1', [id]);
 
-    // 4. Registrar na Auditoria
-    await registrarAuditoria({
-      usuario_id: adminId,
-      acao: 'DELETAR_USUARIO',
-      entidade: 'usuarios',
-      entidade_id: id,
-      detalhes: { nome: user.nome, role: user.role },
-      ip: req.ip
-    });
-
-    logger.warn(`Admin ${adminId} deletou permanentemente o usuário ${id} (${user.nome})`);
+    // Auditoria
+    if (adminId) {
+      await registrarAuditoria({
+        usuario_id: adminId,
+        acao: 'DELETAR_USUARIO',
+        entidade: 'usuarios',
+        entidade_id: id,
+        detalhes: { nome: user.nome, role: user.role },
+        ip: req.ip
+      });
+      logger.warn(`Admin ${adminId} deletou permanentemente o usuário ${id} (${user.nome})`);
+    }
     
     res.json({ message: 'Usuário removido com sucesso do sistema' });
 
   } catch (err) {
-    logger.error('Erro ao deletar usuário:', err);
+    logger.error('Erro ao deletar usuário:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor ao processar exclusão' });
   }
-}   
+}

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+
 // ======================
 // 📍 Controllers
 // ======================
@@ -59,7 +60,13 @@ const router = Router();
 // 🌐 ROOT
 // ======================
 router.get('/', (req, res) => {
-  res.json({ message: 'SDEBR API funcionando 🚀' });
+  res.json({
+    status: 'online',
+    app: 'SDEBR API',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development'
+  });
 });
 
 // ======================

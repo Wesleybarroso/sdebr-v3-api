@@ -1,4 +1,5 @@
-import { connectDB } from '../database/db.js';
+// src/controllers/authController.js
+import pool from '../database/db.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { JWT_CONFIG } from '../config/jwt.js';
@@ -13,34 +14,37 @@ const SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
 export async function register(req, res) {
   try {
     const { nome, email, senha, quer_ser_ponto, telefone, endereco } = req.body;
-    // validação já feita pelo middleware validate(registerSchema)
 
-    const db = await connectDB();
-
-    const userExiste = await db.get(
-      'SELECT id FROM usuarios WHERE email = ?',
+    // ✅ PostgreSQL: usa pool.query() com $1, $2
+    const checkResult = await pool.query(
+      'SELECT id FROM usuarios WHERE email = $1',
       [email]
     );
 
-    if (userExiste) {
+    if (checkResult.rows.length > 0) {
       return res.status(400).json({ error: 'Email já cadastrado' });
     }
 
     const senhaHash = await bcrypt.hash(senha, SALT_ROUNDS);
-
     const status = quer_ser_ponto ? 'pendente' : 'ativo';
     const role = 'user';
 
-    const result = await db.run(
-      'INSERT INTO usuarios (nome, email, senha, telefone, endereco, role, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    // ✅ Usa RETURNING para pegar o ID do novo usuário
+    const insertResult = await pool.query(
+      `INSERT INTO usuarios (nome, email, senha, telefone, endereco, role, status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+       RETURNING id`,
       [nome, email, senhaHash, telefone, endereco, role, status]
     );
 
+    const novoUsuarioId = insertResult.rows[0].id;
+
+    // Auditoria
     await registrarAuditoria({
-      usuario_id: result.lastID,
+      usuario_id: novoUsuarioId,
       acao: 'REGISTRO',
       entidade: 'usuarios',
-      entidade_id: result.lastID,
+      entidade_id: novoUsuarioId,
       ip: req.ip
     });
 
@@ -53,7 +57,7 @@ export async function register(req, res) {
     });
 
   } catch (err) {
-    logger.error('Erro no register:', err);
+    logger.error('Erro no register:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
@@ -64,16 +68,16 @@ export async function register(req, res) {
 export async function login(req, res) {
   try {
     const { email, senha } = req.body;
-    // validação já feita pelo middleware validate(loginSchema)
 
-    const db = await connectDB();
-
-    const user = await db.get(
-      'SELECT id, nome, email, senha, role, status FROM usuarios WHERE email = ?',
+    // ✅ Busca usuário com pool.query()
+    const result = await pool.query(
+      'SELECT id, nome, email, senha, role, status, telefone, endereco FROM usuarios WHERE email = $1',
       [email]
     );
 
-    // timing-safe: sempre compara mesmo sem usuário (evita timing attack)
+    const user = result.rows[0];
+
+    // Timing-safe: sempre compara mesmo sem usuário
     const senhaFake = '$2b$12$invalido.hash.para.timing.seguro.xxxxxxxxxx';
     const senhaValida = await bcrypt.compare(senha, user?.senha || senhaFake);
 
@@ -93,18 +97,20 @@ export async function login(req, res) {
       return res.status(403).json({ error: 'Conta inativa. Entre em contato com o suporte.' });
     }
 
+    // Gera token JWT
     const token = jwt.sign(
       { id: user.id, role: user.role },
       JWT_CONFIG.secret,
       { expiresIn: JWT_CONFIG.expiresIn, algorithm: JWT_CONFIG.algorithm }
     );
 
-    // atualiza último login
-    await db.run(
-      'UPDATE usuarios SET ultimo_login = CURRENT_TIMESTAMP WHERE id = ?',
+    // ✅ Atualiza último login
+    await pool.query(
+      'UPDATE usuarios SET ultimo_login = NOW() WHERE id = $1',
       [user.id]
     );
 
+    // Auditoria
     await registrarAuditoria({
       usuario_id: user.id,
       acao: 'LOGIN',
@@ -128,7 +134,7 @@ export async function login(req, res) {
     });
 
   } catch (err) {
-    logger.error('Erro no login:', err);
+    logger.error('Erro no login:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
@@ -138,19 +144,22 @@ export async function login(req, res) {
 // ======================
 export async function getMe(req, res) {
   try {
-    const db = await connectDB();
-    const user = await db.get(
-      'SELECT id, nome, email, role, status, telefone, endereco, ultimo_login, created_at FROM usuarios WHERE id = ?',
+    // ✅ Query simples com pool.query()
+    const result = await pool.query(
+      'SELECT id, nome, email, role, status, telefone, endereco, ultimo_login, created_at FROM usuarios WHERE id = $1',
       [req.user.id]
     );
 
-     if (!user) {
+    const user = result.rows[0];
+
+    if (!user) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
     res.json(user);
+
   } catch (err) {
-    logger.error('Erro no getMe:', err);
+    logger.error('Erro no getMe:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
@@ -161,13 +170,18 @@ export async function getMe(req, res) {
 export async function alterarSenha(req, res) {
   try {
     const { senha_atual, nova_senha } = req.body;
-    // validação já feita pelo middleware validate(alterarSenhaSchema)
 
-    const db = await connectDB();
-    const user = await db.get(
-      'SELECT id, senha FROM usuarios WHERE id = ?',
+    // ✅ Busca senha atual
+    const result = await pool.query(
+      'SELECT id, senha FROM usuarios WHERE id = $1',
       [req.user.id]
     );
+
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
 
     const senhaCorreta = await bcrypt.compare(senha_atual, user.senha);
     if (!senhaCorreta) {
@@ -175,11 +189,14 @@ export async function alterarSenha(req, res) {
     }
 
     const novaHash = await bcrypt.hash(nova_senha, SALT_ROUNDS);
-    await db.run(
-      'UPDATE usuarios SET senha = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    
+    // ✅ Atualiza senha
+    await pool.query(
+      'UPDATE usuarios SET senha = $1, updated_at = NOW() WHERE id = $2',
       [novaHash, req.user.id]
     );
 
+    // Auditoria
     await registrarAuditoria({
       usuario_id: req.user.id,
       acao: 'ALTERAR_SENHA',
@@ -192,7 +209,7 @@ export async function alterarSenha(req, res) {
     res.json({ message: 'Senha alterada com sucesso' });
 
   } catch (err) {
-    logger.error('Erro ao alterar senha:', err);
+    logger.error('Erro ao alterar senha:', err.message);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
