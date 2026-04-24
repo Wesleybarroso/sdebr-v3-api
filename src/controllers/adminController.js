@@ -353,3 +353,53 @@ export async function listarUsuarios(req, res) {
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
+
+// ======================
+// 🗑️ DELETAR USUÁRIOS
+// ======================
+export async function deletarUsuario(req, res) {
+  try {
+    const { id } = req.params;
+    const adminId = req.user.id; // ID do administrador logado
+    const db = await connectDB();
+
+    // 1. Verificar se o usuário existe
+    const user = await db.get(
+      'SELECT id, nome, role FROM usuarios WHERE id = ?',
+      [id]
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // 2. 🛡️ Segurança: Não permitir que o admin delete a si próprio
+    // Usamos Number() para garantir que a comparação seja entre números
+    if (Number(id) === Number(adminId)) {
+      return res.status(400).json({ 
+        error: 'Operação inválida: Você não pode deletar sua própria conta de administrador.' 
+      });
+    }
+
+    // 3. Executar a remoção
+    await db.run('DELETE FROM usuarios WHERE id = ?', [id]);
+
+    // 4. Registrar na Auditoria
+    await registrarAuditoria({
+      usuario_id: adminId,
+      acao: 'DELETAR_USUARIO',
+      entidade: 'usuarios',
+      entidade_id: id,
+      detalhes: { nome: user.nome, role: user.role },
+      ip: req.ip
+    });
+
+    logger.warn(`Admin ${adminId} deletou permanentemente o usuário ${id} (${user.nome})`);
+    
+    res.json({ message: 'Usuário removido com sucesso do sistema' });
+
+  } catch (err) {
+    logger.error('Erro ao deletar usuário:', err);
+    res.status(500).json({ error: 'Erro interno do servidor ao processar exclusão' });
+  }
+}   

@@ -33,7 +33,8 @@ import {
   getDashboard,
   listarAuditoria,
   listarLogs,
-  listarUsuarios
+  listarUsuarios,
+  deletarUsuario
 } from '../controllers/adminController.js';
 
 import {
@@ -105,5 +106,6 @@ router.patch('/admin/rejeitar/:id', authMiddleware, permit('admin'), rejeitarPon
 router.get('/admin/auditoria', authMiddleware, permit('admin'), listarAuditoria);
 router.get('/admin/logs', authMiddleware, permit('admin'), listarLogs);
 router.get('/admin/usuarios', authMiddleware, permit('admin'), listarUsuarios);
+router.delete('/admin/usuarios/:id', authMiddleware, permit('admin'), deletarUsuario);
 
 export default router;

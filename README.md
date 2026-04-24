@@ -253,62 +253,69 @@ SDEBR-V2-API/
 └── README.md
 
 
+Base URL
+text
+http://localhost:3000/api/v1
+🏠 Health Check
+Método	Endpoint	Descrição
+GET	/	Status da API (público)
 
-## 🔗 Endpoints
+👤 Autenticação
+Método	Endpoint	Descrição	Rate Limit
+POST	/register	Registrar doador/ponto	5/hora
+POST	/login	Login	10/15min
+GET	/me	Meu perfil (auth)	-
+PUT	/alterar-senha	Alterar senha (auth)	-
 
-### Base URL
-https://sdebr-v2-api.onrender.com/api/v1
+📍 Pontos de Coleta
+Método	Endpoint	Descrição	Permissão
+GET	/pontos	Listar pontos (público)	-
+GET	/pontos/:id	Buscar ponto + necessidades	-
+GET	/pontos/meus	Meus pontos	auth
+POST	/pontos	Criar ponto	admin
+PUT	/pontos/:id	Atualizar ponto	admin
+DELETE	/pontos/:id	Deletar ponto	admin
+Filtros para listagem:
 
-### 🏠 Health Check
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/` | Status da API |
+Parâmetro	Exemplo	Descrição
+cidade	?cidade=São Paulo	Filtro por cidade
+estado	?estado=SP	Filtro por UF
+busca	?busca=centro	Busca em nome/bairro
+page	?page=2	Página (padrão: 1)
+limit	?limit=20	Itens por página (max: 100)
 
-### 👤 Autenticação
-| Método | Endpoint | Descrição | Rate Limit |
-|--------|----------|-----------|------------|
-| POST | `/register` | Registrar usuário | 5/hora |
-| POST | `/login` | Login | 10/15min |
-| GET | `/me` | Meu perfil | - |
-| PUT | `/alterar-senha` | Alterar senha | - |
+📦 Necessidades
+Método	Endpoint	Descrição	Permissão
+GET	/necessidades	Listar necessidades (público)	-
+GET	/necessidades/:id	Buscar necessidade	-
+POST	/necessidades	Criar necessidade	ponto/admin
+PATCH	/necessidades/:id	Atualizar necessidade	ponto/admin
+DELETE	/necessidades/:id	Deletar necessidade	ponto/admin
 
-### 📍 Pontos de Coleta
-| Método | Endpoint | Descrição | Permissão |
-|--------|----------|-----------|-----------|
-| GET | `/pontos` | Listar pontos | Público |
-| GET | `/pontos/:id` | Buscar ponto | Público |
-| GET | `/pontos/meus` | Meus pontos | auth |
-| POST | `/pontos` | Criar ponto | admin, ponto |
-| PUT | `/pontos/:id` | Atualizar ponto | admin, ponto |
-| DELETE | `/pontos/:id` | Deletar ponto | admin, ponto |
+🤝 Doações
+Método	Endpoint	Descrição	Permissão	Rate Limit
+GET	/doacoes	Listar doações (público)	-	-
+POST	/doacoes	Registrar doação	user/admin	5/minuto
+DELETE	/doacoes/:id	Deletar doação	admin	-
 
-### 📦 Necessidades
-| Método | Endpoint | Descrição | Permissão |
-|--------|----------|-----------|-----------|
-| GET | `/necessidades` | Listar necessidades | Público |
-| GET | `/necessidades/:id` | Buscar necessidade | Público |
-| POST | `/necessidades` | Criar necessidade | ponto, admin |
-| PATCH | `/necessidades/:id` | Atualizar necessidade | ponto, admin |
-| DELETE | `/necessidades/:id` | Deletar necessidade | ponto, admin |
 
-### 🤝 Doações
-| Método | Endpoint | Descrição | Permissão | Rate Limit |
-|--------|----------|-----------|-----------|------------|
-| GET | `/doacoes` | Listar doações | Público | - |
-| POST | `/doacoes` | Registrar doação | user, admin | 5/minuto |
-| DELETE | `/doacoes/:id` | Deletar doação | admin | - |
+👑 Administração (Painel Brasileiro)
 
-### 👑 Administração
-| Método | Endpoint | Descrição | Permissão |
-|--------|----------|-----------|-----------|
-| GET | `/admin/dashboard` | Métricas | admin |
-| GET | `/admin/ips` | IPs bloqueados | admin |
-| DELETE | `/admin/ip/:ip` | Desbloquear IP | admin |
-| GET | `/admin/solicitacoes` | Solicitações pendentes | admin |
-| PATCH | `/admin/aprovar/:id` | Aprovar ponto | admin |
-| PATCH | `/admin/rejeitar/:id` | Rejeitar solicitação | admin |
-| GET | `/admin/auditoria` | Log de auditoria | admin |
+| Método     | Endpoint              | Descrição                                                  |Permissão|
+| :---       | :---                  | :---                                                       | :---    |
+| **GET**    | `/admin/dashboard`    | Retorna métricas táticas e estatísticas do sistema         | `admin` |
+| **GET**    | `/admin/ips`          | Lista todos os endereços de IP bloqueados pelo firewall    | `admin` |
+| **DELETE** | `/admin/ip/:ip`       | Remove o bloqueio de um IP específico (Whitelist manual)   | `admin` |
+| **GET**    | `/admin/solicitacoes` | Lista solicitações de novos pontos aguardando aprovação    | `admin` |
+| **PATCH**  | `/admin/aprovar/:id`  | Altera status do usuário para 'ativo' e role para 'ponto'  | `admin` |
+| **PATCH**  | `/admin/rejeitar/:id` | Rejeita a solicitação e marca usuário como 'rejeitado'     | `admin` |
+| **GET**    | `/admin/auditoria`    | Histórico de ações críticas realizadas por administradores | `admin` |
+| **GET**    | `/admin/logs`         | Logs brutos de eventos e erros do sistema (Console)        | `admin` |
+| **GET**    | `/admin/usuarios`     | Lista todos os usuários registrados na base SDEBR          | `admin` |
+| **DELETE** | `/admin/usuarios/:id` | Remove permanentemente um usuário do sistema               | `admin` |
 
+
+>>>>>>> 131bb0f (atualização da nova rota e função do admin)
 🔒 Segurança
 Rate Limits (Proteção Brasileira)
 Endpoint	Limite	Janela	Motivo
