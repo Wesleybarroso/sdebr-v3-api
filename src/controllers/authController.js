@@ -12,7 +12,7 @@ const SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
 // ======================
 export async function register(req, res) {
   try {
-    const { nome, email, senha, quer_ser_ponto } = req.body;
+    const { nome, email, senha, quer_ser_ponto, telefone, endereco } = req.body;
     // validação já feita pelo middleware validate(registerSchema)
 
     const db = await connectDB();
@@ -32,8 +32,8 @@ export async function register(req, res) {
     const role = 'user';
 
     const result = await db.run(
-      'INSERT INTO usuarios (nome, email, senha, role, status) VALUES (?, ?, ?, ?, ?)',
-      [nome, email, senhaHash, role, status]
+      'INSERT INTO usuarios (nome, email, senha, telefone, endereco, role, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [nome, email, senhaHash, telefone, endereco, role, status]
     );
 
     await registrarAuditoria({
@@ -121,7 +121,9 @@ export async function login(req, res) {
         id: user.id,
         nome: user.nome,
         email: user.email,
-        role: user.role
+        role: user.role,
+        telefone: user.telefone,
+        endereco: user.endereco
       }
     });
 
@@ -138,11 +140,11 @@ export async function getMe(req, res) {
   try {
     const db = await connectDB();
     const user = await db.get(
-      'SELECT id, nome, email, role, status, ultimo_login, created_at FROM usuarios WHERE id = ?',
+      'SELECT id, nome, email, role, status, telefone, endereco, ultimo_login, created_at FROM usuarios WHERE id = ?',
       [req.user.id]
     );
 
-    if (!user) {
+     if (!user) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 

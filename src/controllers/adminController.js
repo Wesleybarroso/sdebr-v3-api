@@ -91,7 +91,7 @@ export async function listarSolicitacoes(req, res) {
 
     const [users, total] = await Promise.all([
       db.all(
-        `SELECT id, nome, email, status, created_at
+        `SELECT id, nome, email, telefone, endereco, status, created_at -- Adicionado telefone e endereco
          FROM usuarios
          WHERE status = 'pendente'
          ORDER BY created_at ASC
@@ -320,6 +320,7 @@ export async function listarLogs(req, res) {
 // ======================
 // 👥 LISTAR USUÁRIOS
 // ======================
+// Localize esta função e substitua o SELECT:
 export async function listarUsuarios(req, res) {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -330,7 +331,7 @@ export async function listarUsuarios(req, res) {
 
     const [usuarios, total] = await Promise.all([
       db.all(
-        `SELECT id, nome, email, role, status, created_at, ultimo_login
+        `SELECT id, nome, email, telefone, endereco, role, status, created_at, ultimo_login -- Adicionado aqui também
          FROM usuarios
          ORDER BY created_at DESC
          LIMIT ? OFFSET ?`,

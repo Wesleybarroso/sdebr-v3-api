@@ -40,7 +40,7 @@ export async function authMiddleware(req, res, next) {
     // valida usuário no banco (garante que não foi banido/deletado após emissão)
     const db = await connectDB();
     const user = await db.get(
-      'SELECT id, nome, email, role, status FROM usuarios WHERE id = ?',
+      'SELECT id, nome, email, role, status, telefone, endereco FROM usuarios WHERE id = ?',
       [decoded.id]
     );
 
@@ -78,7 +78,7 @@ export async function authOpcional(req, res, next) {
     if (decoded?.id) {
       const db = await connectDB();
       const user = await db.get(
-        'SELECT id, nome, email, role, status FROM usuarios WHERE id = ? AND status = ?',
+        'SELECT id, nome, email, role, status, telefone, endereco FROM usuarios WHERE id = ? AND status = ?',
         [decoded.id, 'ativo']
       );
       if (user) req.user = user;

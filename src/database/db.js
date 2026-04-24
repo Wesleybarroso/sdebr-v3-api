@@ -49,13 +49,15 @@ export async function initDB() {
       nome TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
       senha TEXT NOT NULL,
+      telefone TEXT,      -- Nova coluna
+      endereco TEXT,      -- Nova coluna
       role TEXT DEFAULT 'user' CHECK(role IN ('user', 'ponto', 'admin')),
       status TEXT DEFAULT 'ativo' CHECK(status IN ('ativo', 'pendente', 'rejeitado', 'inativo')),
       ultimo_login DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
-
+    
     -- ======================
     -- 📍 PONTOS DE COLETA
     -- ======================

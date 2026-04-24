@@ -270,3 +270,12 @@
 {"level":"debug","message":"Iniciando limpeza programada...","timestamp":"17/04/2026, 00:38:06"}
 {"level":"debug","message":"Limpeza de IPs: nenhum registro expirado encontrado","timestamp":"17/04/2026, 00:38:06"}
 {"level":"debug","message":"Limpeza programada concluída","timestamp":"17/04/2026, 00:38:06"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"24/04/2026, 00:18:27"}
+{"level":"info","message":"Conexão com banco de dados estabelecida","timestamp":"24/04/2026, 00:18:27"}
+{"level":"info","message":"Schema do banco inicializado com sucesso","timestamp":"24/04/2026, 00:18:27"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"24/04/2026, 00:18:27"}
+{"level":"warn","message":"\n╔══════════════════════════════════════════════════════════════╗\n║                    🔐 ADMIN CRIADO AUTOMATICAMENTE           ║\n╠══════════════════════════════════════════════════════════════╣\n║  Email: admin@sdebr.com                             ║\n║  Senha: Admin123                                    ║\n╠══════════════════════════════════════════════════════════════╣\n║  ⚠️  ALTERE A SENHA APÓS O PRIMEIRO LOGIN!                   ║\n╚══════════════════════════════════════════════════════════════╝\n    ","timestamp":"24/04/2026, 00:18:27"}
+{"level":"debug","message":"Iniciando limpeza programada...","timestamp":"24/04/2026, 00:18:27"}
+{"level":"debug","message":"Limpeza de IPs: nenhum registro expirado encontrado","timestamp":"24/04/2026, 00:18:27"}
+{"level":"debug","message":"Limpeza programada concluída","timestamp":"24/04/2026, 00:18:27"}
+{"level":"info","message":"SIGINT recebido — encerrando servidor...","timestamp":"24/04/2026, 00:20:03"}
