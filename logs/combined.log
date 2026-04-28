@@ -951,3 +951,8 @@
 {"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"24/04/2026, 17:00:45"}
 {"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"24/04/2026, 17:00:45"}
 {"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"28/04/2026, 17:50:34"}
+{"level":"info","message":"✅ Banco de dados PostgreSQL inicializado com sucesso","timestamp":"28/04/2026, 17:50:34"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"28/04/2026, 17:50:34"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"28/04/2026, 17:50:35"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"28/04/2026, 17:50:35"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"28/04/2026, 17:50:35"}
