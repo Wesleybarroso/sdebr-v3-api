@@ -944,3 +944,10 @@
 {"level":"info","message":"Senha alterada: usuário 1","timestamp":"24/04/2026, 16:09:56"}
 {"level":"info","message":{"duration":"1199ms","ip":"::1","method":"PUT","status":200,"url":"/alterar-senha","userAgent":"Mozilla/5.0 (Windows NT; Windows NT 10.0; pt-BR) WindowsPowerShell/5.1.26100.8115"},"timestamp":"24/04/2026, 16:09:56"}
 {"level":"info","message":{"duration":"234ms","ip":"::1","method":"GET","status":200,"url":"/admin/dashboard","userAgent":"Mozilla/5.0 (Windows NT; Windows NT 10.0; pt-BR) WindowsPowerShell/5.1.26100.8115"},"timestamp":"24/04/2026, 16:10:02"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"24/04/2026, 17:00:44"}
+{"level":"info","message":"✅ Banco de dados PostgreSQL inicializado com sucesso","timestamp":"24/04/2026, 17:00:45"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"24/04/2026, 17:00:45"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"24/04/2026, 17:00:45"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"24/04/2026, 17:00:45"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"24/04/2026, 17:00:45"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"28/04/2026, 17:50:34"}

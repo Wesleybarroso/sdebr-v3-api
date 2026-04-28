@@ -5,6 +5,7 @@ import bcrypt from 'bcrypt';
 import { JWT_CONFIG } from '../config/jwt.js';
 import { logger } from '../config/logger.js';
 import { registrarAuditoria } from '../utils/auditoria.js';
+import { verifyToken } from '../utils/hcaptcha.js'; // ✅ NOVO IMPORT
 
 const SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
 
@@ -13,9 +14,31 @@ const SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
 // ======================
 export async function register(req, res) {
   try {
-    const { nome, email, senha, quer_ser_ponto, telefone, endereco } = req.body;
-
-    // ✅ PostgreSQL: usa pool.query() com $1, $2
+    // ✅ Extrair campos, incluindo hCaptcha
+    const { nome, email, senha, quer_ser_ponto, telefone, endereco, 'h-captcha-response': captchaToken } = req.body;
+    
+    // ✅ Validação do hCaptcha (obrigatória em produção)
+    if (process.env.NODE_ENV === 'production') {
+      if (!captchaToken) {
+        return res.status(400).json({ 
+          error: 'Verificação de segurança obrigatória',
+          code: 'MISSING_CAPTCHA'
+        });
+      }
+      
+      const hcaptchaResult = await verifyToken(captchaToken, req.ip);
+      
+      if (!hcaptchaResult.success) {
+        logger.warn('⚠️ hCaptcha falhou no registro:', hcaptchaResult['error-codes']);
+        return res.status(400).json({ 
+          error: 'Verificação de segurança falhou',
+          details: hcaptchaResult['error-codes'],
+          code: 'CAPTCHA_FAILED'
+        });
+      }
+    }
+    
+    // ✅ RESTANTE DO SEU CÓDIGO ORIGINAL (inalterado):
     const checkResult = await pool.query(
       'SELECT id FROM usuarios WHERE email = $1',
       [email]
@@ -29,7 +52,6 @@ export async function register(req, res) {
     const status = quer_ser_ponto ? 'pendente' : 'ativo';
     const role = 'user';
 
-    // ✅ Usa RETURNING para pegar o ID do novo usuário
     const insertResult = await pool.query(
       `INSERT INTO usuarios (nome, email, senha, telefone, endereco, role, status, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
@@ -67,9 +89,31 @@ export async function register(req, res) {
 // ======================
 export async function login(req, res) {
   try {
-    const { email, senha } = req.body;
-
-    // ✅ Busca usuário com pool.query()
+    // ✅ Extrair campos, incluindo hCaptcha
+    const { email, senha, 'h-captcha-response': captchaToken } = req.body;
+    
+    // ✅ Validação do hCaptcha (obrigatória em produção)
+    if (process.env.NODE_ENV === 'production') {
+      if (!captchaToken) {
+        return res.status(400).json({ 
+          error: 'Verificação de segurança obrigatória',
+          code: 'MISSING_CAPTCHA'
+        });
+      }
+      
+      const hcaptchaResult = await verifyToken(captchaToken, req.ip);
+      
+      if (!hcaptchaResult.success) {
+        logger.warn('⚠️ hCaptcha falhou no login:', hcaptchaResult['error-codes']);
+        return res.status(400).json({ 
+          error: 'Verificação de segurança falhou',
+          details: hcaptchaResult['error-codes'],
+          code: 'CAPTCHA_FAILED'
+        });
+      }
+    }
+    
+    // ✅ RESTANTE DO SEU CÓDIGO ORIGINAL (inalterado):
     const result = await pool.query(
       'SELECT id, nome, email, senha, role, status, telefone, endereco FROM usuarios WHERE email = $1',
       [email]
@@ -104,7 +148,7 @@ export async function login(req, res) {
       { expiresIn: JWT_CONFIG.expiresIn, algorithm: JWT_CONFIG.algorithm }
     );
 
-    // ✅ Atualiza último login
+    // Atualiza último login
     await pool.query(
       'UPDATE usuarios SET ultimo_login = NOW() WHERE id = $1',
       [user.id]
@@ -144,7 +188,6 @@ export async function login(req, res) {
 // ======================
 export async function getMe(req, res) {
   try {
-    // ✅ Query simples com pool.query()
     const result = await pool.query(
       'SELECT id, nome, email, role, status, telefone, endereco, ultimo_login, created_at FROM usuarios WHERE id = $1',
       [req.user.id]
@@ -171,7 +214,6 @@ export async function alterarSenha(req, res) {
   try {
     const { senha_atual, nova_senha } = req.body;
 
-    // ✅ Busca senha atual
     const result = await pool.query(
       'SELECT id, senha FROM usuarios WHERE id = $1',
       [req.user.id]
@@ -190,7 +232,6 @@ export async function alterarSenha(req, res) {
 
     const novaHash = await bcrypt.hash(nova_senha, SALT_ROUNDS);
     
-    // ✅ Atualiza senha
     await pool.query(
       'UPDATE usuarios SET senha = $1, updated_at = NOW() WHERE id = $2',
       [novaHash, req.user.id]
