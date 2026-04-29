@@ -3,7 +3,9 @@ import pool from '../database/db.js';
 import { logger } from '../config/logger.js';
 import { registrarAuditoria } from '../utils/auditoria.js';
 import { unblockIP } from '../middleware/ipBlocker.js';
+import bcrypt from 'bcrypt';  
 
+const SALT_ROUNDS = 10;
 // ======================
 // 🚫 IPS BLOQUEADOS
 // ======================
@@ -373,6 +375,108 @@ export async function listarUsuarios(req, res) {
 }
 
 // ======================
+// ➕ CRIAR USUÁRIO (ADMIN)
+// ======================
+export async function criarUsuario(req, res) {
+  try {
+    const { nome, email, senha, telefone, role, endereco } = req.body;
+
+    // Validações
+    if (!nome || !email || !senha) {
+      return res.status(400).json({ error: 'Nome, email e senha são obrigatórios' });
+    }
+
+    // Verificar email duplicado
+    const emailExistente = await pool.query(
+      'SELECT id FROM usuarios WHERE email = $1',
+      [email]
+    );
+    
+    if (emailExistente.rows.length > 0) {
+      return res.status(400).json({ error: 'Email já cadastrado' });
+    }
+
+    // Hash da senha
+    const hashedPassword = await bcrypt.hash(senha, SALT_ROUNDS);
+
+    // Inserir no banco
+    const result = await pool.query(
+      `INSERT INTO usuarios 
+       (nome, email, senha, telefone, role, endereco, created_at, updated_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) 
+       RETURNING id, nome, email, telefone, role, created_at`,
+      [nome, email, hashedPassword, telefone, role || 'admin', endereco]
+    );
+
+    // Auditoria
+    await registrarAuditoria({
+      usuario_id: req.user.id,
+      acao: 'CRIAR_USUARIO',
+      entidade: 'usuarios',
+      entidade_id: result.rows[0].id,
+      detalhes: { nome, email, role },
+      ip: req.ip
+    });
+
+    res.status(201).json({ 
+      message: 'Usuário criado com sucesso',
+      usuario: result.rows[0] 
+    });
+
+  } catch (err) {
+    console.error('Erro ao criar usuário:', err);
+    res.status(500).json({ error: 'Erro interno ao criar usuário' });
+  }
+}
+
+// ============================================================================
+// ✏️ ATUALIZAR USUÁRIO (ADMIN)
+// ============================================================================
+export async function atualizarUsuario(req, res) {
+  try {
+    const { id } = req.params;
+    const { nome, email, telefone, role, endereco } = req.body;
+
+    // Atualizar no banco (COALESCE mantém valor antigo se não for enviado)
+    const result = await pool.query(
+      `UPDATE usuarios 
+       SET nome = COALESCE($1, nome),
+           email = COALESCE($2, email),
+           telefone = COALESCE($3, telefone),
+           role = COALESCE($4, role),
+           endereco = COALESCE($5, endereco),
+           updated_at = NOW()
+       WHERE id = $6
+       RETURNING id, nome, email, telefone, role, created_at, updated_at`,
+      [nome, email, telefone, role, endereco, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // Auditoria
+    await registrarAuditoria({
+      usuario_id: req.user.id,
+      acao: 'ATUALIZAR_USUARIO',
+      entidade: 'usuarios',
+      entidade_id: id,
+      detalhes: { nome, email, telefone, role },
+      ip: req.ip
+    });
+
+    res.json({ 
+      message: 'Usuário atualizado com sucesso',
+      usuario: result.rows[0] 
+    });
+
+  } catch (err) {
+    console.error('Erro ao atualizar usuário:', err);
+    res.status(500).json({ error: 'Erro interno ao atualizar usuário' });
+  }
+}
+
+// ======================
 // 🗑️ DELETAR USUÁRIOS
 // ======================
 export async function deletarUsuario(req, res) {
@@ -421,3 +525,4 @@ export async function deletarUsuario(req, res) {
     res.status(500).json({ error: 'Erro interno do servidor ao processar exclusão' });
   }
 }
+

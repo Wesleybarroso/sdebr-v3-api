@@ -11,7 +11,7 @@ console.log('-------------------------');
 const PORT = process.env.PORT || 3000;
 
 const server = app.listen(PORT, () => {
-  logger.info(`Servidor SDEBR rodando na porta ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+  logger.info(`🌐 API SDEBR rodando na porta ${PORT} [${process.env.NODE_ENV || 'development'}]`);
 });
 
 server.on('error', (err) => {

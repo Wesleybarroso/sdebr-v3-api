@@ -110,7 +110,7 @@ app.use((err, req, res, next) => {
 async function start() {
   try {
     await initDB();
-    logger.info('Banco de dados inicializado com sucesso');
+    logger.info('🌐 Banco de dados inicializado com sucesso');
     
      // 🔐 CRIA ADMIN AUTOMATICAMENTE SE NÃO EXISTIR
     await seedAdmin();  // ← ADICIONE ESTA LINHA

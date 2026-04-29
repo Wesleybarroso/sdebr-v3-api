@@ -956,3 +956,96 @@
 {"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"28/04/2026, 17:50:35"}
 {"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"28/04/2026, 17:50:35"}
 {"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"28/04/2026, 17:50:35"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"28/04/2026, 18:04:05"}
+{"level":"info","message":"✅ Banco de dados PostgreSQL inicializado com sucesso","timestamp":"28/04/2026, 18:04:05"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"28/04/2026, 18:04:05"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"28/04/2026, 18:04:05"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"28/04/2026, 18:04:05"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"28/04/2026, 18:04:05"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"28/04/2026, 19:04:05"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"28/04/2026, 19:04:05"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"28/04/2026, 20:04:05"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"28/04/2026, 20:04:05"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"28/04/2026, 21:04:05"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"28/04/2026, 21:04:05"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"28/04/2026, 22:04:06"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"28/04/2026, 22:04:07"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"29/04/2026, 12:14:39"}
+{"level":"info","message":"✅ Banco de dados PostgreSQL inicializado com sucesso","timestamp":"29/04/2026, 12:14:39"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"29/04/2026, 12:14:39"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"29/04/2026, 12:14:39"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"29/04/2026, 12:14:39"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"29/04/2026, 12:14:39"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"29/04/2026, 12:18:31"}
+{"level":"info","message":"✅ Banco de dados PostgreSQL inicializado com sucesso","timestamp":"29/04/2026, 12:18:32"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"29/04/2026, 12:18:32"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"29/04/2026, 12:18:32"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"29/04/2026, 12:18:32"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"29/04/2026, 12:18:32"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"29/04/2026, 12:19:19"}
+{"level":"info","message":"✅ Banco de dados PostgreSQL inicializado com sucesso","timestamp":"29/04/2026, 12:19:19"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"29/04/2026, 12:19:19"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"29/04/2026, 12:19:20"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"29/04/2026, 12:19:20"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"29/04/2026, 12:19:20"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"29/04/2026, 12:41:00"}
+{"level":"info","message":"✅ Banco de dados PostgreSQL inicializado com sucesso","timestamp":"29/04/2026, 12:41:00"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"29/04/2026, 12:41:00"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"29/04/2026, 12:41:00"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"29/04/2026, 12:41:00"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"29/04/2026, 12:41:00"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"29/04/2026, 12:41:04"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"29/04/2026, 12:41:06"}
+{"level":"info","message":"✅ Banco de dados PostgreSQL inicializado com sucesso","timestamp":"29/04/2026, 12:41:06"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"29/04/2026, 12:41:06"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"29/04/2026, 12:41:06"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"29/04/2026, 12:41:06"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"29/04/2026, 12:41:06"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"29/04/2026, 13:24:44"}
+{"level":"info","message":"✅ Banco de dados PostgreSQL inicializado com sucesso","timestamp":"29/04/2026, 13:24:44"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"29/04/2026, 13:24:44"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"29/04/2026, 13:24:44"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"29/04/2026, 13:24:44"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"29/04/2026, 13:24:44"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"29/04/2026, 13:24:57"}
+{"level":"info","message":"✅ Banco de dados PostgreSQL inicializado com sucesso","timestamp":"29/04/2026, 13:24:57"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"29/04/2026, 13:24:57"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"29/04/2026, 13:24:57"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"29/04/2026, 13:24:57"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"29/04/2026, 13:24:57"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"29/04/2026, 14:29:10"}
+{"code":"42703","file":"indexcmds.c","length":98,"level":"error","line":"1960","message":"❌ Erro ao inicializar banco: coluna \"totp_enabled\" não existe","name":"error","routine":"ComputeIndexAttrs","severity":"ERRO","stack":"error: coluna \"totp_enabled\" não existe\n    at C:\\Users\\wesle\\OneDrive\\Desktop\\SDEBR-V3-api\\node_modules\\pg\\lib\\client.js:631:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async initDB (file:///C:/Users/wesle/OneDrive/Desktop/SDEBR-V3-api/src/database/db.js:25:5)\n    at async start (file:///C:/Users/wesle/OneDrive/Desktop/SDEBR-V3-api/src/app.js:112:5)","timestamp":"29/04/2026, 14:29:12"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"29/04/2026, 14:29:12"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"29/04/2026, 14:29:12"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"29/04/2026, 14:29:12"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"29/04/2026, 14:29:12"}
+{"level":"info","message":"Servidor SDEBR rodando na porta 3000 [development]","timestamp":"29/04/2026, 14:34:31"}
+{"level":"info","message":"✅ Banco de dados PostgreSQL inicializado/atualizado com sucesso","timestamp":"29/04/2026, 14:34:34"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"29/04/2026, 14:34:34"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"29/04/2026, 14:34:34"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"29/04/2026, 14:34:34"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"29/04/2026, 14:34:34"}
+{"level":"info","message":"API SDEBR rodando na porta 3000 [development]","timestamp":"29/04/2026, 14:38:40"}
+{"level":"info","message":"✅ Banco de dados PostgreSQL inicializado/atualizado com sucesso","timestamp":"29/04/2026, 14:38:41"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"29/04/2026, 14:38:41"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"29/04/2026, 14:38:41"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"29/04/2026, 14:38:41"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"29/04/2026, 14:38:41"}
+{"level":"info","message":"🌐API SDEBR rodando na porta 3000 [development]","timestamp":"29/04/2026, 14:39:47"}
+{"level":"info","message":"✅ Banco de dados PostgreSQL inicializado/atualizado com sucesso","timestamp":"29/04/2026, 14:39:47"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"29/04/2026, 14:39:47"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"29/04/2026, 14:39:47"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"29/04/2026, 14:39:47"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"29/04/2026, 14:39:48"}
+{"level":"info","message":"🌐 API SDEBR rodando na porta 3000 [development]","timestamp":"29/04/2026, 14:39:52"}
+{"level":"info","message":"✅ Banco de dados PostgreSQL inicializado/atualizado com sucesso","timestamp":"29/04/2026, 14:39:52"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"29/04/2026, 14:39:52"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"29/04/2026, 14:39:52"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"29/04/2026, 14:39:52"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"29/04/2026, 14:39:52"}
+{"level":"info","message":"🌐 API SDEBR rodando na porta 3000 [development]","timestamp":"29/04/2026, 14:40:20"}
+{"level":"info","message":"🌐 Banco de dados PostgreSQL inicializado/atualizado com sucesso","timestamp":"29/04/2026, 14:40:20"}
+{"level":"info","message":"Banco de dados inicializado com sucesso","timestamp":"29/04/2026, 14:40:20"}
+{"level":"info","message":"👤 Admin já existe, pulando seed","timestamp":"29/04/2026, 14:40:20"}
+{"level":"debug","message":"🧹 Iniciando limpeza programada...","timestamp":"29/04/2026, 14:40:20"}
+{"level":"debug","message":"✨ Limpeza programada concluída","timestamp":"29/04/2026, 14:40:20"}

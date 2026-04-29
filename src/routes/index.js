@@ -1,5 +1,5 @@
+// src/routes/index.js
 import { Router } from 'express';
-
 
 // ======================
 // 📍 Controllers
@@ -35,6 +35,8 @@ import {
   listarAuditoria,
   listarLogs,
   listarUsuarios,
+  criarUsuario,
+  atualizarUsuario,
   deletarUsuario
 } from '../controllers/adminController.js';
 
@@ -42,14 +44,32 @@ import {
   register,
   login,
   getMe,
-  alterarSenha
+  alterarSenha,
+  // ✅ 2FA
+  setup2FA,
+  enable2FA,
+  disable2FA,
+  // ✅ RECUPERAÇÃO DE SENHA
+  forgotPassword,
+  resetPassword,
+  verifyResetToken
 } from '../controllers/authController.js';
+
+// ✅ CONFIGURAÇÃO DE EMAIL
+import {
+  getEmailConfig,
+  saveEmailConfig,
+  testEmailConfig,
+  deactivateEmailConfig
+} from '../controllers/emailConfigController.js';
 
 // ======================
 // 🔒 Middlewares
 // ======================
 import { authMiddleware } from '../middleware/auth.js';
 import { permit } from '../middleware/role.js';
+import { verify2FA } from '../middleware/verify2FA.js';
+import { checkSettingsAccess } from '../middleware/checkSettingsAccess.js';
 
 // 🚫 Rate limit
 import { doacaoLimiter } from '../middleware/rateLimit.js';
@@ -75,7 +95,19 @@ router.get('/', (req, res) => {
 router.post('/register', register);
 router.post('/login', login);
 router.get('/me', authMiddleware, getMe);
-router.put('/alterar-senha', authMiddleware, alterarSenha);
+
+// 🔐 ALTERAR SENHA (Protegido com 2FA)
+router.put('/alterar-senha', authMiddleware, verify2FA, alterarSenha);
+
+// 🔐 ROTAS DE 2FA (Configuração)
+router.get('/auth/2fa/setup', authMiddleware, setup2FA);
+router.post('/auth/2fa/enable', authMiddleware, enable2FA);
+router.post('/auth/2fa/disable', authMiddleware, disable2FA);
+
+// 🔐 RECUPERAÇÃO DE SENHA (Públicas - sem auth)
+router.post('/auth/forgot-password', forgotPassword);
+router.post('/auth/reset-password', resetPassword);
+router.get('/auth/verify-reset-token', verifyResetToken);
 
 // ======================
 // 📍 PONTOS
@@ -112,7 +144,22 @@ router.patch('/admin/aprovar/:id', authMiddleware, permit('admin'), aprovarPonto
 router.patch('/admin/rejeitar/:id', authMiddleware, permit('admin'), rejeitarPonto);
 router.get('/admin/auditoria', authMiddleware, permit('admin'), listarAuditoria);
 router.get('/admin/logs', authMiddleware, permit('admin'), listarLogs);
+
+// 👥 USUÁRIOS (Com proteções 2FA e controle de acesso)
 router.get('/admin/usuarios', authMiddleware, permit('admin'), listarUsuarios);
-router.delete('/admin/usuarios/:id', authMiddleware, permit('admin'), deletarUsuario);
+router.post('/admin/usuarios', authMiddleware, permit('admin'), verify2FA, criarUsuario);
+router.put('/admin/usuarios/:id', authMiddleware, permit('admin'), verify2FA, checkSettingsAccess, atualizarUsuario);
+router.delete('/admin/usuarios/:id', authMiddleware, permit('admin'), verify2FA, deletarUsuario);
+
+// 🔐 CONFIGURAÇÕES DO ADMIN
+router.get('/admin/configuracoes', authMiddleware, permit('admin'), checkSettingsAccess, (req, res) => {
+  res.json({ message: 'Acesso permitido às configurações' });
+});
+
+// 📧 CONFIGURAÇÃO DE EMAIL (Admin)
+router.get('/admin/email-config', authMiddleware, permit('admin'), checkSettingsAccess, getEmailConfig);
+router.post('/admin/email-config', authMiddleware, permit('admin'), checkSettingsAccess, saveEmailConfig);
+router.post('/admin/email-config/test', authMiddleware, permit('admin'), checkSettingsAccess, testEmailConfig);
+router.post('/admin/email-config/deactivate', authMiddleware, permit('admin'), checkSettingsAccess, deactivateEmailConfig);
 
 export default router;

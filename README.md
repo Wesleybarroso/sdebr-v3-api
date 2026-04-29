@@ -237,69 +237,86 @@ Credenciais de Teste (Seed Automático)
 - 1 letra minúscula
 - 1 caractere especial
 
-🗺️ Rotas da API
-Todas as rotas estão versionadas em /api/v1
+## 📡 API Endpoints
 
-Base URL
-text
-http://localhost:3000/api/v1
-🏠 Health Check
-Método	Endpoint	Descrição
-GET	/	Status da API (público)
+Todas as rotas são prefixadas com `/api/v1`. O servidor roda na porta `3000` (development) ou na porta configurada em produção.
 
-👤 Autenticação
-Método	Endpoint	Descrição	Rate Limit
-POST	/register	Registrar doador/ponto	5/hora
-POST	/login	Login	10/15min
-GET	/me	Meu perfil (auth)	-
-PUT	/alterar-senha	Alterar senha (auth)	-
+### 🔐 Autenticação & Usuário
 
-📍 Pontos de Coleta
-Método	Endpoint	Descrição	Permissão
-GET	/pontos	Listar pontos (público)	-
-GET	/pontos/:id	Buscar ponto + necessidades	-
-GET	/pontos/meus	Meus pontos	auth
-POST	/pontos	Criar ponto	admin
-PUT	/pontos/:id	Atualizar ponto	admin
-DELETE	/pontos/:id	Deletar ponto	admin
-Filtros para listagem:
+| Método | Rota | Descrição | Auth | Notas |
+|--------|------|-----------|------|-------|
+| `POST` | `/register` | Cadastro de novo usuário | ❌ Público | Exige hCaptcha em produção |
+| `POST` | `/login` | Login com JWT | ❌ Público | Exige hCaptcha em produção |
+| `GET`  | `/me` | Perfil do usuário logado | ✅ Token | Retorna dados do `req.user` |
+| `PUT`  | `/alterar-senha` | Alterar própria senha | ✅ Token | 🔒 Exige código 2FA |
+| `GET`  | `/auth/2fa/setup` | Gerar QR Code para 2FA | ✅ Token | Retorna `secret` e `qrCode` |
+| `POST` | `/auth/2fa/enable` | Ativar 2FA | ✅ Token | Valida código de 6 dígitos |
+| `POST` | `/auth/2fa/disable` | Desativar 2FA | ✅ Token | Exige senha atual + código 2FA |
+| `POST` | `/auth/forgot-password` | Solicitar recuperação de senha | ❌ Público | Envia email com token (1h) |
+| `POST` | `/auth/reset-password` | Redefinir senha | ❌ Público | Valida token e atualiza senha |
+| `GET`  | `/auth/verify-reset-token` | Validar token de recuperação | ❌ Público | Usado no frontend para UX |
 
-Parâmetro	Exemplo	Descrição
-cidade	?cidade=São Paulo	Filtro por cidade
-estado	?estado=SP	Filtro por UF
-busca	?busca=centro	Busca em nome/bairro
-page	?page=2	Página (padrão: 1)
-limit	?limit=20	Itens por página (max: 100)
+### 📍 Pontos de Coleta
 
-📦 Necessidades
-Método	Endpoint	Descrição	Permissão
-GET	/necessidades	Listar necessidades (público)	-
-GET	/necessidades/:id	Buscar necessidade	-
-POST	/necessidades	Criar necessidade	ponto/admin
-PATCH	/necessidades/:id	Atualizar necessidade	ponto/admin
-DELETE	/necessidades/:id	Deletar necessidade	ponto/admin
+| Método | Rota | Descrição | Auth | Permissão |
+|--------|------|-----------|------|-----------|
+| `GET`  | `/pontos` | Listar todos os pontos | ❌ Público | - |
+| `GET`  | `/pontos/:id` | Buscar ponto por ID | ❌ Público | - |
+| `POST` | `/pontos` | Criar novo ponto | ✅ Token | `admin` |
+| `PUT`  | `/pontos/:id` | Atualizar ponto | ✅ Token | `admin` |
+| `DELETE`| `/pontos/:id` | Deletar ponto | ✅ Token | `admin` |
 
-🤝 Doações
-Método	Endpoint	Descrição	Permissão	Rate Limit
-GET	/doacoes	Listar doações (público)	-	-
-POST	/doacoes	Registrar doação	user/admin	5/minuto
-DELETE	/doacoes/:id	Deletar doação	admin	-
+### 📦 Necessidades
 
+| Método | Rota | Descrição | Auth | Permissão |
+|--------|------|-----------|------|-----------|
+| `GET`  | `/necessidades` | Listar necessidades | ❌ Público | - |
+| `POST` | `/necessidades` | Criar necessidade | ✅ Token | `ponto`, `admin` |
+| `PATCH`| `/necessidades/:id` | Atualizar necessidade | ✅ Token | `ponto`, `admin` |
+| `DELETE`| `/necessidades/:id` | Deletar necessidade | ✅ Token | `ponto`, `admin` |
 
-👑 Administração (Painel Brasileiro)
+### 🤝 Doações
 
-| Método     | Endpoint              | Descrição                                                  |Permissão|
-| :---       | :---                  | :---                                                       | :---    |
-| **GET**    | `/admin/dashboard`    | Retorna métricas táticas e estatísticas do sistema         | `admin` |
-| **GET**    | `/admin/ips`          | Lista todos os endereços de IP bloqueados pelo firewall    | `admin` |
-| **DELETE** | `/admin/ip/:ip`       | Remove o bloqueio de um IP específico (Whitelist manual)   | `admin` |
-| **GET**    | `/admin/solicitacoes` | Lista solicitações de novos pontos aguardando aprovação    | `admin` |
-| **PATCH**  | `/admin/aprovar/:id`  | Altera status do usuário para 'ativo' e role para 'ponto'  | `admin` |
-| **PATCH**  | `/admin/rejeitar/:id` | Rejeita a solicitação e marca usuário como 'rejeitado'     | `admin` |
-| **GET**    | `/admin/auditoria`    | Histórico de ações críticas realizadas por administradores | `admin` |
-| **GET**    | `/admin/logs`         | Logs brutos de eventos e erros do sistema (Console)        | `admin` |
-| **GET**    | `/admin/usuarios`     | Lista todos os usuários registrados na base SDEBR          | `admin` |
-| **DELETE** | `/admin/usuarios/:id` | Remove permanentemente um usuário do sistema               | `admin` |
+| Método | Rota | Descrição | Auth | Permissão | Rate Limit |
+|--------|------|-----------|------|-----------|------------|
+| `GET`  | `/doacoes` | Listar doações | ❌ Público | - | - |
+| `POST` | `/doacoes` | Registrar doação | ✅ Token | `user`, `admin` | ✅ 5 req/min |
+| `DELETE`| `/doacoes/:id` | Deletar doação | ✅ Token | `admin` | - |
+
+### 👑 Painel Administrativo
+
+| Método | Rota | Descrição | Auth | Permissão | Proteções |
+|--------|------|-----------|------|-----------|-----------|
+| `GET`  | `/admin/dashboard` | Métricas e KPIs | ✅ Token | `admin` | - |
+| `GET`  | `/admin/ips` | Listar IPs bloqueados | ✅ Token | `admin` | - |
+| `DELETE`| `/admin/ip/:ip` | Desbloquear IP | ✅ Token | `admin` | - |
+| `GET`  | `/admin/solicitacoes` | Pontos pendentes de aprovação | ✅ Token | `admin` | - |
+| `PATCH`| `/admin/aprovar/:id` | Aprovar ponto | ✅ Token | `admin` | - |
+| `PATCH`| `/admin/rejeitar/:id` | Rejeitar ponto | ✅ Token | `admin` | - |
+| `GET`  | `/admin/auditoria` | Logs de auditoria | ✅ Token | `admin` | - |
+| `GET`  | `/admin/logs` | Logs do sistema | ✅ Token | `admin` | - |
+| `GET`  | `/admin/usuarios` | Listar usuários | ✅ Token | `admin` | - |
+| `POST` | `/admin/usuarios` | Criar administrador | ✅ Token | `admin` | 🔒 2FA |
+| `PUT`  | `/admin/usuarios/:id` | Atualizar usuário | ✅ Token | `admin` | 🔒 2FA + ⚙️ Settings |
+| `DELETE`| `/admin/usuarios/:id` | Deletar usuário | ✅ Token | `admin` | 🔒 2FA |
+| `GET`  | `/admin/configuracoes` | Acesso ao painel de config | ✅ Token | `admin` | ⚙️ Settings |
+| `GET`  | `/admin/email-config` | Configuração de email | ✅ Token | `admin` | ⚙️ Settings |
+| `POST` | `/admin/email-config` | Salvar config de email | ✅ Token | `admin` | ⚙️ Settings |
+| `POST` | `/admin/email-config/test` | Testar envio de email | ✅ Token | `admin` | ⚙️ Settings |
+| `POST` | `/admin/email-config/deactivate` | Desativar config de email | ✅ Token | `admin` | ⚙️ Settings |
+
+---
+
+### 🔑 Legenda & Regras
+
+- **Auth**: `✅ Token` requer header `Authorization: Bearer <jwt>`
+- **Permissões**: 
+  - `user`: Pode doar e acessar áreas públicas
+  - `ponto`: Pode gerenciar necessidades do seu ponto
+  - `admin`: Acesso total ao painel administrativo
+- **🔒 2FA**: Ações críticas exigem código TOTP de 6 dígitos (`otp_code` no body ou header `x-otp-code`)
+- **⚙️ Settings**: Requer `can_access_settings: true` no perfil do admin
+- **Rate Limit**: Doações limitadas a 5 requisições/minuto por usuário/IP
 
 
 🧪 Testes
